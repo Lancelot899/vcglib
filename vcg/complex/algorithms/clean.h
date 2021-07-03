@@ -142,7 +142,7 @@ public:
   {
     if(m.vert.size()==0 || m.vn==0) return 0;
 
-    std::map<VertexPointer, VertexPointer> mp; //ÕâÀï¾ÍÊÇ¼ÇÂ¼Ò»ÏÂ£¬ÁôÄÄ¸öµã(Í¬Ò»¸ö×ø±êµÄµãÖ»ÁôÒ»¸ö)
+    std::map<VertexPointer, VertexPointer> mp; //è¿™é‡Œå°±æ˜¯è®°å½•ä¸€ä¸‹ï¼Œç•™å“ªä¸ªç‚¹(åŒä¸€ä¸ªåæ ‡çš„ç‚¹åªç•™ä¸€ä¸ª)
     size_t i,j;
     VertexIterator vi;
     int deleted=0;
@@ -183,7 +183,7 @@ public:
         if (!(*fi).IsD()) {
             for (k = 0; k < (*fi).VN(); ++k) {
                 if (mp.find((typename MeshType::VertexPointer)(*fi).V(k)) != mp.end()) {
-                    (*fi).V(k) = &*mp[(*fi).V(k)];    // Èç¹û·¢ÏÖÓĞµã±»É¾³ı£¬¾ÍÕÒµ½ÁôÏÂµÄÄÇ¸öµã£¬¸³Öµ¸øface
+                    (*fi).V(k) = &*mp[(*fi).V(k)];    // å¦‚æœå‘ç°æœ‰ç‚¹è¢«åˆ é™¤ï¼Œå°±æ‰¾åˆ°ç•™ä¸‹çš„é‚£ä¸ªç‚¹ï¼Œèµ‹å€¼ç»™face
                 }
             }
         }
@@ -194,12 +194,12 @@ public:
         if (!(*ei).IsD()) {
             for (k = 0; k < 2; ++k) {
                 if (mp.find((typename MeshType::VertexPointer)(*ei).V(k)) != mp.end()) {
-                    (*ei).V(k) = &*mp[(*ei).V(k)];       // ¶ÔedgeµÄ²Ù×÷Í¬face
+                    (*ei).V(k) = &*mp[(*ei).V(k)];       // å¯¹edgeçš„æ“ä½œåŒface
                 }
             }
         }
     }
-    // ËùÎ½ÍË»¯µÄÃæ£¬¾ÍÊÇÃæÓĞÁ½¸öµã¼ÇÂ¼ÁËÍ¬Ò»¸öµã
+    // æ‰€è°“é€€åŒ–çš„é¢ï¼Œå°±æ˜¯é¢æœ‰ä¸¤ä¸ªç‚¹è®°å½•äº†åŒä¸€ä¸ªç‚¹
     if(RemoveDegenerateFlag) RemoveDegenerateFace(m);
     if(RemoveDegenerateFlag && m.en>0) {
       RemoveDegenerateEdge(m);
@@ -265,7 +265,7 @@ public:
       the reason this function is usually performed BEFORE building any topology information.
      */                   // V1.0
 static int RemoveDuplicateFace(MeshType& m) {
-    // SortedTripleÕâÀï»á½«µãµÄid´ÓĞ¡µ½´óÅÅ£¬²¢ÇÒÔÚÀïÃæ¶¨ÒåÁË×ÖµäĞò
+    // SortedTripleè¿™é‡Œä¼šå°†ç‚¹çš„idä»å°åˆ°å¤§æ’ï¼Œå¹¶ä¸”åœ¨é‡Œé¢å®šä¹‰äº†å­—å…¸åº
 	//   return (v[2]!=p.v[2])?(v[2]<p.v[2]):
 	// (v[1] != p.v[1]) ? (v[1] < p.v[1]) :
 	//	(v[0] < p.v[0]);
@@ -531,7 +531,7 @@ static int RemoveDuplicateFace(MeshType& m) {
 
     SelectionStack<MeshType> ss(m);
     ss.push();
-    // Í¨¹ıhalf-edge(pos)½á¹¹ºÍ±éÀúface·Ö±ğÍ³¼ÆµãÖÜÎ§µÄface±ê¼ÇÁË·ÇÁ÷ĞÎµã
+    // é€šè¿‡half-edge(pos)ç»“æ„å’Œéå†faceåˆ†åˆ«ç»Ÿè®¡ç‚¹å‘¨å›´çš„faceæ ‡è®°äº†éæµå½¢ç‚¹
     CountNonManifoldVertexFF(m,true);
     UpdateFlags<MeshType>::VertexClearV(m);
     for (FaceIterator fi = m.face.begin(); fi != m.face.end(); ++fi) {
@@ -542,9 +542,9 @@ static int RemoveDuplicateFace(MeshType& m) {
                     face::Pos<FaceType> startPos(&*fi, i);
                     face::Pos<FaceType> curPos = startPos;
                     std::set<FaceInt> faceSet;
-                    /// Èç¹ûµãÊÇ·ÇÁ÷ĞÎµã£¬¼ÇÂ¼Í¨¹ıhalf-edgeÄÜ±éÀúµ½µÄËùÓĞface,´æ´¢µ½
+                    /// å¦‚æœç‚¹æ˜¯éæµå½¢ç‚¹ï¼Œè®°å½•é€šè¿‡half-edgeèƒ½éå†åˆ°çš„æ‰€æœ‰face,å­˜å‚¨åˆ°
                     /// std::vector<std::pair<VertexPointer, std::vector<FaceInt> > >ToSplitVec;
-                    /// ÉÏÊö±íÖĞ
+                    /// ä¸Šè¿°è¡¨ä¸­
                     do {
                         faceSet.insert(std::make_pair(curPos.F(), curPos.VInd()));
                         curPos.NextE();
@@ -563,8 +563,8 @@ static int RemoveDuplicateFace(MeshType& m) {
     }
     ss.pop();
     // Second step actually add new vertices and split them.
-    /// ÓÉÓÚĞŞ¸ÄÁËµã»áĞŞ¸Ä±ğµÄ¸ü¶àµÄÊı¾İ£¬±ÈÈçface´æ´¢ÁËµãµÄÖ¸Õë£¬ËùÒÔĞèÒª¸Äface
-    /// PointerUpdaterÕâ¸öÀà¾ÍÊÇ×¨ÃÅÓÃÓÚ´¦ÀíÕâĞ©ÎÊÌâµÄ
+    /// ç”±äºä¿®æ”¹äº†ç‚¹ä¼šä¿®æ”¹åˆ«çš„æ›´å¤šçš„æ•°æ®ï¼Œæ¯”å¦‚faceå­˜å‚¨äº†ç‚¹çš„æŒ‡é’ˆï¼Œæ‰€ä»¥éœ€è¦æ”¹face
+    /// PointerUpdaterè¿™ä¸ªç±»å°±æ˜¯ä¸“é—¨ç”¨äºå¤„ç†è¿™äº›é—®é¢˜çš„
     typename tri::Allocator<MeshType>::template PointerUpdater<VertexPointer> pu;
     VertexIterator firstVp = tri::Allocator<MeshType>::AddVertices(m,ToSplitVec.size(),pu);
     for(size_t i =0;i<ToSplitVec.size();++i)
@@ -582,7 +582,7 @@ static int RemoveDuplicateFace(MeshType& m) {
         delta+=Barycenter(*(ff.first))-np->cP();
       }
       delta /= ToSplitVec[i].second.size();
-      /// °Ñ·ÖÀëµãµÄÎ»ÖÃÍùÉÏÒÆÒ»µã
+      /// æŠŠåˆ†ç¦»ç‚¹çš„ä½ç½®å¾€ä¸Šç§»ä¸€ç‚¹
       firstVp->P() = firstVp->P() + delta * moveThreshold;
       firstVp++;
     }
@@ -611,7 +611,7 @@ static int RemoveDuplicateFace(MeshType& m) {
         if ((!IsManifold(*fi,0))||
             (!IsManifold(*fi,1))||
             (!IsManifold(*fi,2)))
-          ToDelVec.push_back(&*fi);    //ÕâÀïÅĞ¶ÏµÄ·½·¨ÊÇÃæÍ¨¹ı±ß¶ÔÉÏµÄÃæ£¬´Ó¶øÒ»Ìõ±ßÖ»ÄÜÓĞÁ½¸öÃæ
+          ToDelVec.push_back(&*fi);    //è¿™é‡Œåˆ¤æ–­çš„æ–¹æ³•æ˜¯é¢é€šè¿‡è¾¹å¯¹ä¸Šçš„é¢ï¼Œä»è€Œä¸€æ¡è¾¹åªèƒ½æœ‰ä¸¤ä¸ªé¢
       }
 
     std::sort(ToDelVec.begin(),ToDelVec.end(),CompareAreaFP());
@@ -627,7 +627,7 @@ static int RemoveDuplicateFace(MeshType& m) {
         {
           for(int j=0;j<3;++j)
             if(!face::IsBorder<FaceType>(ff,j))
-              vcg::face::FFDetach<FaceType>(ff,j);  //ÕâÀïÓÃµÄÃæÃæ±í£¬ËùÉ¾³ıÃæºó£¬ĞèÒª°ÑÃæÃæ±íµÄÁ´±íÁ¬ÆğÀ´
+              vcg::face::FFDetach<FaceType>(ff,j);  //è¿™é‡Œç”¨çš„é¢é¢è¡¨ï¼Œæ‰€åˆ é™¤é¢åï¼Œéœ€è¦æŠŠé¢é¢è¡¨çš„é“¾è¡¨è¿èµ·æ¥
 
           Allocator<MeshType>::DeleteFace(m,ff);
           count_fd++;
@@ -646,7 +646,7 @@ static int RemoveDuplicateFace(MeshType& m) {
     for(FaceIterator fi=m.face.begin(); fi!=m.face.end();++fi){
       if(!(*fi).IsD())
         if(!OnlyOnSelected || (*fi).IsS()) {
-               //< ¼ÆËãÈı½ÇĞÎÃæ»ıµÃµ½Ãæ»ıµÄÁ½±¶
+               //< è®¡ç®—ä¸‰è§’å½¢é¢ç§¯å¾—åˆ°é¢ç§¯çš„ä¸¤å€
           const ScalarType doubleArea=DoubleArea<FaceType>(*fi);
           if((doubleArea<=MinAreaThr) || (doubleArea>=MaxAreaThr)) {
             Allocator<MeshType>::DeleteFace(m,*fi);
@@ -969,12 +969,12 @@ static int RemoveDuplicateFace(MeshType& m) {
                 (*fi).V(i)->SetV();
                 face::Pos<FaceType> pos(&(*fi), i);
 
-                /// ÕâÀïÍ¨¹ıpos.NextEÍ³¼ÆÁËÄÇĞ©Face
+                /// è¿™é‡Œé€šè¿‡pos.NextEç»Ÿè®¡äº†é‚£äº›Face
                 int starSizeFF = pos.NumberOfIncidentFaces();
 
                 if (starSizeFF != TD[(*fi).V(i)]) {
                     if (selectVert) (*fi).V(i)->SetS();
-                    nonManifoldCnt++; // Èç¹ûÕâ¸öµãÊÇmanifoldÉÏµÄµã£¬ÄÇÃ´Ëû±ØÈ»Âú×ãÍ¨¹ıhalf-edge±éÀúµÃµ½µÄfaceÊıÁ¿µÈÓÚÎŞÄÔ±éÀúface¼ÇÂ¼µÄfaceÊıÁ¿
+                    nonManifoldCnt++; // å¦‚æœè¿™ä¸ªç‚¹æ˜¯manifoldä¸Šçš„ç‚¹ï¼Œé‚£ä¹ˆä»–å¿…ç„¶æ»¡è¶³é€šè¿‡half-edgeéå†å¾—åˆ°çš„faceæ•°é‡ç­‰äºæ— è„‘éå†faceè®°å½•çš„faceæ•°é‡
                 }
             }
         }

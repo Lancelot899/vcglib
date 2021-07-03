@@ -288,10 +288,10 @@ template <class UserTypes,
           template <typename> class K = DefaultDeriver, template <typename> class L = DefaultDeriver >
                             class Face: public FaceArityMax<UserTypes, A, B, C, D, E, F, G, H, I, J, K, L>  {
                             public: typedef AllTypes::AFaceType IAm; typedef UserTypes TypesPool;};
-                            /// Face������̳���FaceArityMax����������ģ��д��һ��װ��
-                            /// FaceArityMax�ж������һЩ�����ķ�������Ҫ�������������͵ķ��ʺͶ�д��ǩ��
-                            /// ֮����һϵ�������̳У����ὫABCDEF..L�����������𼶼̳й�������L��A�𼶷���ÿ����һ������
-                            /// ��󵽺�������FaceBase������̳е�face::EmptyCore
+                            /// Face在这里继承了FaceArityMax，里面是用模板写的一个装配
+                            /// FaceArityMax中定义的是一些基本的方法，主要是用于设置类型的访问和读写标签的
+                            /// 之后是一系列连续继承，它会将ABCDEF..L的所有属性逐级继承过来，从L到A逐级反向，每级多一个属性
+                            /// 最后到核心类型FaceBase，他会继承到face::EmptyCore
 
 
 

@@ -168,9 +168,9 @@ public:
     // per ogni vertice vi si cercano i vertici adiacenti che sono toccati da una faccia sola
     // (o meglio da un numero dispari di facce)
 
-    // ����������м�¼�ĸ�����border�������Ǳ���һ������Χ���棬�ȱ��ÿ������������֮��ĵ㣬����Ѿ���ǣ���ɾ�����
-    // ����ѭ����ȥ�����Ǳ߽�ı߻ᱻ���һ�Σ�ɾ��һ�Σ��߽�ı�ֻ�ᱻ��ǣ����յõ���Ǳ�
-    // Borderx������ĵ�x���Ǳ߽�
+    // 这里会在面中记录哪个边是border，方法是遍历一个点周围的面，先标记每个面除了这个点之外的点，如果已经标记，便删除标记
+    // 这样循环下去，不是边界的边会被标记一次，删除一次，边界的边只会被标记，最终得到标记边
+    // Borderx代表面的第x边是边界
     const int BORDERFLAG[3]={FaceType::BORDER0, FaceType::BORDER1, FaceType::BORDER2};
 
     for(VertexIterator vi=m.vert.begin();vi!=m.vert.end();++vi)

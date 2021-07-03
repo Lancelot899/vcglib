@@ -80,7 +80,7 @@ public:
     assert(nz<pf->VN());
 
     v[0] = pf->V(nz);
-    v[1] = pf->V(pf->Next(nz)); // pf->NextµÃµ½µÄÊÇÏÂÒ»¸öÖ¸±êµÄµã
+    v[1] = pf->V(pf->Next(nz)); // pf->Nextå¾—åˆ°çš„æ˜¯ä¸‹ä¸€ä¸ªæŒ‡æ ‡çš„ç‚¹
     assert(v[0] != v[1]); // The face pointed by 'f' is Degenerate (two coincident vertexes)
 
     if( v[0] > v[1] ) std::swap(v[0],v[1]);
@@ -251,7 +251,7 @@ static void FaceFace(MeshType &m)
   if( m.fn == 0 ) return;
 
   std::vector<PEdge> e;
-  FillEdgeVector(m,e); // ÕâÒ»²½»áµÃµ½ËùÓÐµÄ±ß£¬Ã¿¸ö±ßÀïÃæ¼ÇÂ¼ÁËface£¬Í¬Ò»¸ö±ß(µãÏàÍ¬)¼ÇÂ¼µÄfaceÒ»¶¨²»Ò»Ñù
+  FillEdgeVector(m,e); // è¿™ä¸€æ­¥ä¼šå¾—åˆ°æ‰€æœ‰çš„è¾¹ï¼Œæ¯ä¸ªè¾¹é‡Œé¢è®°å½•äº†faceï¼ŒåŒä¸€ä¸ªè¾¹(ç‚¹ç›¸åŒ)è®°å½•çš„faceä¸€å®šä¸ä¸€æ ·
   sort(e.begin(), e.end());							// Lo ordino per vertici
 
   int ne = 0;											// Numero di edge reali
@@ -263,7 +263,7 @@ static void FaceFace(MeshType &m)
   {
     if( pe==e.end() || !(*pe == *ps) )					// Trovo blocco di edge uguali
     {
-        //ÕâÀïÉú³ÉvertexFaceÀàËÆµÄÁ´±í
+        //è¿™é‡Œç”ŸæˆvertexFaceç±»ä¼¼çš„é“¾è¡¨
       typename std::vector<PEdge>::iterator q,q_next;
       for (q=ps;q<pe-1;++q)						// Scansione facce associate
       {
@@ -311,25 +311,25 @@ static void VertexFace(MeshType &m)
       {
           for (int j = 0; j < (*fi).VN(); ++j)
           {
-              (*fi).VFp(j) = (*fi).V(j)->VFp(); //Ê×ÏÈ»á±éÀúÃæµÄËùÓÐµã£¬È»ºó¼ÇÂ¼µãÖ¸ÏòµÄÃæ
-              (*fi).VFi(j) = (*fi).V(j)->VFi(); // ÕâÀï¼ÇÂ¼ÄÇ¸öÃæµÄ¶ÔÓ¦µãÊÇµÚ¼¸¸öµã
-              (*fi).V(j)->VFp() = &(*fi); //°ÑÕâ¸öµãËùÖ»ÏëµÄÃæ¼ÇÂ¼µ±Ç°Ãæ£¬ÓÃÓÚÏÂÒ»´Îµü´úÊ¹ÓÃ
+              (*fi).VFp(j) = (*fi).V(j)->VFp(); //é¦–å…ˆä¼šéåŽ†é¢çš„æ‰€æœ‰ç‚¹ï¼Œç„¶åŽè®°å½•ç‚¹æŒ‡å‘çš„é¢
+              (*fi).VFi(j) = (*fi).V(j)->VFi(); // è¿™é‡Œè®°å½•é‚£ä¸ªé¢çš„å¯¹åº”ç‚¹æ˜¯ç¬¬å‡ ä¸ªç‚¹
+              (*fi).V(j)->VFp() = &(*fi); //æŠŠè¿™ä¸ªç‚¹æ‰€åªæƒ³çš„é¢è®°å½•å½“å‰é¢ï¼Œç”¨äºŽä¸‹ä¸€æ¬¡è¿­ä»£ä½¿ç”¨
               (*fi).V(j)->VFi() = j;
           }
       }
   }
 
-  /// Õâ¸ö¹ý³ÌÆäÊµÊÇÍ¨¹ýµã´æ´¢µÄVFpºÍVFi½«ÁÚÓòÐÅÏ¢¼ÇÂ¼µ½ÃæµÄVFpºÍVFiÖÐ£¬¾ßÌåÁ÷³ÌÊÇ
-  /// __ __ __  ÈçÍ¼ËùÊ¾£¬Ãæ´Ó×óµ½ÓÒÎª0,1,2,3,4
-  /// \/_\/_\/  µãÎª012 213 324 435 456
-  /// µÚÒ»´Îµü´úÊ±ºò£¬0ºÅÃæ¼ÇÂ¼µÄµã½ÚµãÎªxxx(x´ú±í¿ÕÖ¸Õë)£¬È»ºó012Èý¸öµãµÄVFp±ä³ÉÁË000
-  /// µÚ¶þ´Îµü´ú£¬1ºÅÃæÖ¸Õë±äÎªÁË00x£¬È»ºó213Èý¸öµãµÄVFP±ä³ÉÁË111
-  /// µÚÈý´Îµü´ú£¬2ºÅÃæÖ¸Õë±äÎªÁË11x, È»ºó324Èý¸öµãµÄVFP±ä³ÉÁË222
-  /// µÚËÄ´Îµü´ú£¬3ºÅÃæÖ¸Õë±äÎªÁË22x, È»ºó435Èý¸öµãµÄVFp±äÎª333
-  /// µÚÎå´Îµü´ú£¬4ºÅÃæÖ¸Õë±äÎªÁË33x£¬È»ºó456Èý¸öµãVFp±äÎª444
-  /// ×îºóÍ³¼ÆÒ»ÏÂµã£¬(0, 0) (1,1) (2,2) (3,3) (4, 4) (5, 4) (6, 4)
-  /// ÏÖÔÚ¿¼ÂÇµü´ú2ºÅµãÖÜÎ§µÄÃæ,Ê×ÏÈ»áÄÃ³ö2ºÅµã¶ÔÓ¦µÄÃæ£¬¼´2ºÅÃæ£¬È»ºó2ºÅÃæ¼ÇÂ¼µÄ2ºÅµã¶ÔÓ¦µÄÃæVFpÖ¸ÕëÎª1£¬
-  /// ÕâÊ±ºò»áµü´ú1ºÅÃæ£¬1ºÅÃæ¶ÔÓ¦µÄ2ºÅµã¶ÔÓ¦µÄÖ¸ÕëÎª0£¬ÕâÊ±»áµü´ú0ºÅÃæ£¬×îºó0ºÅÃæ¼ÇÂ¼ÁËx£¬ÖÕÖ¹µü´ú
+  /// è¿™ä¸ªè¿‡ç¨‹å…¶å®žæ˜¯é€šè¿‡ç‚¹å­˜å‚¨çš„VFpå’ŒVFiå°†é‚»åŸŸä¿¡æ¯è®°å½•åˆ°é¢çš„VFpå’ŒVFiä¸­ï¼Œå…·ä½“æµç¨‹æ˜¯
+  /// __ __ __  å¦‚å›¾æ‰€ç¤ºï¼Œé¢ä»Žå·¦åˆ°å³ä¸º0,1,2,3,4
+  /// \/_\/_\/  ç‚¹ä¸º012 213 324 435 456
+  /// ç¬¬ä¸€æ¬¡è¿­ä»£æ—¶å€™ï¼Œ0å·é¢è®°å½•çš„ç‚¹èŠ‚ç‚¹ä¸ºxxx(xä»£è¡¨ç©ºæŒ‡é’ˆ)ï¼Œç„¶åŽ012ä¸‰ä¸ªç‚¹çš„VFpå˜æˆäº†000
+  /// ç¬¬äºŒæ¬¡è¿­ä»£ï¼Œ1å·é¢æŒ‡é’ˆå˜ä¸ºäº†00xï¼Œç„¶åŽ213ä¸‰ä¸ªç‚¹çš„VFPå˜æˆäº†111
+  /// ç¬¬ä¸‰æ¬¡è¿­ä»£ï¼Œ2å·é¢æŒ‡é’ˆå˜ä¸ºäº†11x, ç„¶åŽ324ä¸‰ä¸ªç‚¹çš„VFPå˜æˆäº†222
+  /// ç¬¬å››æ¬¡è¿­ä»£ï¼Œ3å·é¢æŒ‡é’ˆå˜ä¸ºäº†22x, ç„¶åŽ435ä¸‰ä¸ªç‚¹çš„VFpå˜ä¸º333
+  /// ç¬¬äº”æ¬¡è¿­ä»£ï¼Œ4å·é¢æŒ‡é’ˆå˜ä¸ºäº†33xï¼Œç„¶åŽ456ä¸‰ä¸ªç‚¹VFpå˜ä¸º444
+  /// æœ€åŽç»Ÿè®¡ä¸€ä¸‹ç‚¹ï¼Œ(0, 0) (1,1) (2,2) (3,3) (4, 4) (5, 4) (6, 4)
+  /// çŽ°åœ¨è€ƒè™‘è¿­ä»£2å·ç‚¹å‘¨å›´çš„é¢,é¦–å…ˆä¼šæ‹¿å‡º2å·ç‚¹å¯¹åº”çš„é¢ï¼Œå³2å·é¢ï¼Œç„¶åŽ2å·é¢è®°å½•çš„2å·ç‚¹å¯¹åº”çš„é¢VFpæŒ‡é’ˆä¸º1ï¼Œ
+  /// è¿™æ—¶å€™ä¼šè¿­ä»£1å·é¢ï¼Œ1å·é¢å¯¹åº”çš„2å·ç‚¹å¯¹åº”çš„æŒ‡é’ˆä¸º0ï¼Œè¿™æ—¶ä¼šè¿­ä»£0å·é¢ï¼Œæœ€åŽ0å·é¢è®°å½•äº†xï¼Œç»ˆæ­¢è¿­ä»£
 }
 
 

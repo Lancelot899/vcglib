@@ -216,9 +216,9 @@ public:
 	nPerfmormedOps =0;
 	while( !GoalReached() && !h.empty()) {
     if(h.size()> m.SimplexNumber()*HeapSimplexRatio ) ClearHeap();
-	 //µ÷ÓÃpop_heap»á°Ñ×î´óµÄÊý·Åµ½×îºó
+	 //è°ƒç”¨pop_heapä¼šæŠŠæœ€å¤§çš„æ•°æ”¾åˆ°æœ€åŽ
 	std::pop_heap(h.begin(), h.end());
-	// heapÀïÃæ´æ´¢ÁËTriEdgeCollapse·½·¨£¬ÕâÀï»áÄÃµ½ÓÅÏÈ¼¶×î´óµÄ·½·¨
+	// heapé‡Œé¢å­˜å‚¨äº†TriEdgeCollapseæ–¹æ³•ï¼Œè¿™é‡Œä¼šæ‹¿åˆ°ä¼˜å…ˆçº§æœ€å¤§çš„æ–¹æ³•
 	LocModPtrType  locMod = h.back().locModPtr;
 	currMetric=h.back().pri;
 	h.pop_back();
@@ -228,9 +228,9 @@ public:
         // check if it is feasible
 		if (locMod->IsFeasible(this->pp)) {
 			nPerfmormedOps++;
-			// ÕâÀï»áµ÷ÓÃEdgeCollapser::Do£¬½«±ßv0v1Ì®Ëõ³ÉÒ»Ìõ
+			// è¿™é‡Œä¼šè°ƒç”¨EdgeCollapser::Doï¼Œå°†è¾¹v0v1åç¼©æˆä¸€æ¡
 			locMod->Execute(m, this->pp);
-			// ¸üÐÂÕâÌõ±ß¾Ö²¿µÄheapElementÈ»ºóµ÷ÕûHeap£¬×¼±¸ÏÂÒ»´Î²Ù×÷
+			// æ›´æ–°è¿™æ¡è¾¹å±€éƒ¨çš„heapElementç„¶åŽè°ƒæ•´Heapï¼Œå‡†å¤‡ä¸‹ä¸€æ¬¡æ“ä½œ
 			locMod->UpdateHeap(h, this->pp);
 		}
 	}
@@ -278,9 +278,9 @@ void ClearHeap()
 		// The expected size of heap depends on the type of the local modification we are using..
 		HeapSimplexRatio = LocalModificationType::HeapSimplexRatio(pp);
 		
-		//< ÕâÀï½«meshËùÓÐµÄ±ß´æ´¢ÁËÒ»¸öTriEdgeCollapse·½·¨
+		//< è¿™é‡Œå°†meshæ‰€æœ‰çš„è¾¹å­˜å‚¨äº†ä¸€ä¸ªTriEdgeCollapseæ–¹æ³•
 		LocalModificationType::Init(m,h,pp);
-		// ½¨×î´ó¶Ñ
+		// å»ºæœ€å¤§å †
 		std::make_heap(h.begin(),h.end());
 		if(!h.empty()) currMetric=h.front().pri;
 	}

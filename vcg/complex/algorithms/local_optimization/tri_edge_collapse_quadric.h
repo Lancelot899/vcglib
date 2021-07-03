@@ -224,8 +224,8 @@ public:
 
   pp->CosineThr=cos(pp->NormalThrRad);  
 
-  vcg::tri::UpdateTopology<TriMeshType>::VertexFace(m); //Éú³ÉµãÃæ±í
-  vcg::tri::UpdateFlags<TriMeshType>::FaceBorderFromVF(m);     // ²éÕÒ²¢¼ÇÂ¼±ß½ç
+  vcg::tri::UpdateTopology<TriMeshType>::VertexFace(m); //ç”Ÿæˆç‚¹é¢è¡¨
+  vcg::tri::UpdateFlags<TriMeshType>::FaceBorderFromVF(m);     // æŸ¥æ‰¾å¹¶è®°å½•è¾¹ç•Œ
 
     if(pp->FastPreserveBoundary)
     {
@@ -253,7 +253,7 @@ public:
         }
     }
 
-    ////ÕâÀïÃ¿¸öµã¶¼ÓĞ¸ö¶ş´ÎĞÍ£¬µãµÄ¶ş´ÎĞÍÊÇËùÔÚµÄËùÓĞÃæµÄ¶ş´ÎĞÍµÄºÍ
+    ////è¿™é‡Œæ¯ä¸ªç‚¹éƒ½æœ‰ä¸ªäºŒæ¬¡å‹ï¼Œç‚¹çš„äºŒæ¬¡å‹æ˜¯æ‰€åœ¨çš„æ‰€æœ‰é¢çš„äºŒæ¬¡å‹çš„å’Œ
     InitQuadric(m,pp);
 
   // Initialize the heap with all the possible collapses
@@ -270,7 +270,7 @@ public:
                     assert(x.F()->V(x.I()) == &(*vi));
                     if ((x.V0() < x.V1()) && x.V1()->IsRW() && !x.V1()->IsV()) {
                         x.V1()->SetV();
-                        //< heapÊÇÒ»¸övectorÖĞµÄÔªËØ£¬Ëû´æ´¢µÄÊÇÒ»¸ö·½·¨£¬Õâ¸ö·½·¨½Ğ×öTriEdgeCollapse,¼Ì³ĞÓÚLocalModification£¬ÒÔÏÂÊÇĞèÒªÖØÔØµÄ·½·¨
+                        //< heapæ˜¯ä¸€ä¸ªvectorä¸­çš„å…ƒç´ ï¼Œä»–å­˜å‚¨çš„æ˜¯ä¸€ä¸ªæ–¹æ³•ï¼Œè¿™ä¸ªæ–¹æ³•å«åšTriEdgeCollapse,ç»§æ‰¿äºLocalModificationï¼Œä»¥ä¸‹æ˜¯éœ€è¦é‡è½½çš„æ–¹æ³•
                         /*
 							/// return the type of operation
 							virtual ModifierType IsOfType() = 0;
@@ -290,10 +290,10 @@ public:
 							/// Perform the operation
 							virtual void Execute(MeshType& m, BaseParameterClass* pp) = 0;
                          */
-                        // ·½·¨µÄ¶¨ÒåÔÚtri_edge_collapse.hÎÄ¼şÖĞ, ×¢Òâµ½TriEdgeCollapseQuadric¼Ì³ĞÁËTriEdgeCollapseÀàĞÍ£¬ÕâÀïMYTYPEÊµ¼ÊÉÏÊÇTriEdgeCollapseQuadricÀàĞÍ
-                        // Õâ¸öTriEdgeCollapseQuadric»á¼ÆËãÒ»¸öÓÅÏÈ¼¶£¬Êµ¼ÊÉÏÊÇ¼ÆËãÈç¹ûÕâ¸öµã¶Ô¶¨ÒåµÄ±ßÌ½Ë÷ºó£¬ËûµÄÎó²îÖµÊÇ¶àÉÙ
-						// Íâ²¿µ÷ÓÃµÄÊ±ºò´«½øÀ´µÄÊÇ class TriEdgeCollapse : public vcg::tri::TriEdgeCollapseQuadric<Mesh, VertexPair, TriEdgeCollapse, QHelper>
-                        // µ«Êµ¼ÊÉÏÊ²Ã´º¯Êı¶¼Ã»¶¨Òå
+                        // æ–¹æ³•çš„å®šä¹‰åœ¨tri_edge_collapse.hæ–‡ä»¶ä¸­, æ³¨æ„åˆ°TriEdgeCollapseQuadricç»§æ‰¿äº†TriEdgeCollapseç±»å‹ï¼Œè¿™é‡ŒMYTYPEå®é™…ä¸Šæ˜¯TriEdgeCollapseQuadricç±»å‹
+                        // è¿™ä¸ªTriEdgeCollapseQuadricä¼šè®¡ç®—ä¸€ä¸ªä¼˜å…ˆçº§ï¼Œå®é™…ä¸Šæ˜¯è®¡ç®—å¦‚æœè¿™ä¸ªç‚¹å¯¹å®šä¹‰çš„è¾¹æ¢ç´¢åï¼Œä»–çš„è¯¯å·®å€¼æ˜¯å¤šå°‘
+						// å¤–éƒ¨è°ƒç”¨çš„æ—¶å€™ä¼ è¿›æ¥çš„æ˜¯ class TriEdgeCollapse : public vcg::tri::TriEdgeCollapseQuadric<Mesh, VertexPair, TriEdgeCollapse, QHelper>
+                        // ä½†å®é™…ä¸Šä»€ä¹ˆå‡½æ•°éƒ½æ²¡å®šä¹‰
                         h_ret.push_back(HeapElem(new MYTYPE(VertexPair(x.V0(), x.V1()), TriEdgeCollapse< TriMeshType, VertexPair, MYTYPE>::GlobalMark(), _pp)));
                     }
                     if ((x.V0() < x.V2()) && x.V2()->IsRW() && !x.V2()->IsV()) {
@@ -303,7 +303,7 @@ public:
                 }
             }
         }
-    } else { // if the collapse is A-symmetric (e.g. u->v != v->u) //ºÍÉÏÃæµÄÎ¨Ò»Çø±ğÔÚÓÚÊÇ·ñµ÷ÓÃSetV£¬ÉÏÃæÖ»±éÀúÁËÒ»´Î±ß£¬ÒòÎªSetVºó£¬ÔÙ´Î·ÃÎÊµ½»áÓÖx.V2()->IsVÅĞ¶ÏÎªtrue
+    } else { // if the collapse is A-symmetric (e.g. u->v != v->u) //å’Œä¸Šé¢çš„å”¯ä¸€åŒºåˆ«åœ¨äºæ˜¯å¦è°ƒç”¨SetVï¼Œä¸Šé¢åªéå†äº†ä¸€æ¬¡è¾¹ï¼Œå› ä¸ºSetVåï¼Œå†æ¬¡è®¿é—®åˆ°ä¼šåˆx.V2()->IsVåˆ¤æ–­ä¸ºtrue
         for(vi=m.vert.begin();vi!=m.vert.end();++vi)
             if(!(*vi).IsD() && (*vi).IsRW()) {
                 vcg::face::VFIterator<FaceType> x;
@@ -354,12 +354,12 @@ public:
     //// Move the two vertexes into new position (storing the old ones)
     CoordType OldPos0=v[0]->P();
     CoordType OldPos1=v[1]->P();
-    // Èç¹ûÃ»ÓĞÉèÖÃ¼ÆËã×îÓÅµãÎ»ÖÃ£¬ÄÇÃ´·µ»Øv[1]
-    // ·ñÔò¼ÆËãÒ»ÏÂÖĞµãÆ«Àë¶ş´ÎĞÍµÄ¾àÀë£¬¶Ôv[0]ºÍv[1]´¦µÄ¶ş´ÎĞÍ¸÷ËãÒ»¸ö
-    // Èç¹ûÖĞµãÂú×ãÁË¶ş´ÎĞÍµÄÆ«ÀëãĞÖµ£¬ÄÇÃ´·µ»ØÖĞµã£¬·ñÔò£¬¼ÆËã¶ş´ÎĞÍ×îĞ¡Öµ(·½·¨ÊÇÇó×¤µã£¬µ«¿ÉÄÜ²»´æÔÚ)
-    // Èç¹û×¤µã´æÔÚ£¬Ö±½Ó·µ»Ø×¤µã£¬·ñÔò¼ÆËãÖĞµã£¬×óÓÒ¶ËµãË­µÄÆ«ÒÆĞ¡£¬ÄÇÃ´·µ»ØË­
+    // å¦‚æœæ²¡æœ‰è®¾ç½®è®¡ç®—æœ€ä¼˜ç‚¹ä½ç½®ï¼Œé‚£ä¹ˆè¿”å›v[1]
+    // å¦åˆ™è®¡ç®—ä¸€ä¸‹ä¸­ç‚¹åç¦»äºŒæ¬¡å‹çš„è·ç¦»ï¼Œå¯¹v[0]å’Œv[1]å¤„çš„äºŒæ¬¡å‹å„ç®—ä¸€ä¸ª
+    // å¦‚æœä¸­ç‚¹æ»¡è¶³äº†äºŒæ¬¡å‹çš„åç¦»é˜ˆå€¼ï¼Œé‚£ä¹ˆè¿”å›ä¸­ç‚¹ï¼Œå¦åˆ™ï¼Œè®¡ç®—äºŒæ¬¡å‹æœ€å°å€¼(æ–¹æ³•æ˜¯æ±‚é©»ç‚¹ï¼Œä½†å¯èƒ½ä¸å­˜åœ¨)
+    // å¦‚æœé©»ç‚¹å­˜åœ¨ï¼Œç›´æ¥è¿”å›é©»ç‚¹ï¼Œå¦åˆ™è®¡ç®—ä¸­ç‚¹ï¼Œå·¦å³ç«¯ç‚¹è°çš„åç§»å°ï¼Œé‚£ä¹ˆè¿”å›è°
     CoordType newPos = ComputePosition(_pp); 
-    /// Ì®Ëõ±ß
+    /// åç¼©è¾¹
     v[0]->P() = v[1]->P() = newPos;
     
     //// Rescan faces and compute quality and difference between normals
@@ -372,14 +372,14 @@ public:
       if( x.V1()!=v[1] && x.V2()!=v[1] )     // skiping faces with v1
       {
         if(pp->NormalCheck){
-            //¼ÆËãÈı½ÇĞÎµÄ·¨ÏòÁ¿
+            //è®¡ç®—ä¸‰è§’å½¢çš„æ³•å‘é‡
           CoordType nn=NormalizedTriangleNormal(*x.F());
           double ndiff=nn.dot(onVec[i++]);
-          // ¼ÆËãºÍÏÈÇ°·¨ÏòÁ¿µÄÄÚ»ı
+          // è®¡ç®—å’Œå…ˆå‰æ³•å‘é‡çš„å†…ç§¯
           MinCos=std::min(MinCos,ndiff);
         }
         if(pp->QualityCheck){ 
-            // ¼ÆËãÈı½ÇĞÎµÄÖÊÁ¿
+            // è®¡ç®—ä¸‰è§’å½¢çš„è´¨é‡
           double qt= QualityFace(*x.F());
           MinQual=std::min(MinQual,qt);
         }
@@ -401,7 +401,7 @@ public:
     QuadricType qq=QH::Qd(v[0]);
     qq+=QH::Qd(v[1]);
 
-    // ¼ÆËãÌ®ËõºóµÄµã¶ÔÔ­À´µÄ¶ş´ÎĞÍÎó²î
+    // è®¡ç®—åç¼©åçš„ç‚¹å¯¹åŸæ¥çš„äºŒæ¬¡å‹è¯¯å·®
     double QuadErr = pp->ScaleFactor*qq.Apply(Point3d::Construct(v[1]->P()));
     
     assert(!math::IsNAN(QuadErr));
@@ -423,7 +423,7 @@ public:
 
     if( pp->UseVertexWeight ) QuadErr *= (QH::W(v[1])+QH::W(v[0]))/2;
     
-    //< »ùÓÚÅäÖÃ¼ÆËãÎó²î
+    //< åŸºäºé…ç½®è®¡ç®—è¯¯å·®
     ScalarType error;
     if(!pp->QualityCheck && !pp->NormalCheck) error = (ScalarType)(QuadErr);
     if( pp->QualityCheck && !pp->NormalCheck) error = (ScalarType)(QuadErr / MinQual);
@@ -434,7 +434,7 @@ public:
     v[0]->P()=OldPos0;
     v[1]->P()=OldPos1;
     
-    //< ÓÅÏÈ¼¶ÎªÏÈÇ°¶¨ÒåµÄÎó²î
+    //< ä¼˜å…ˆçº§ä¸ºå…ˆå‰å®šä¹‰çš„è¯¯å·®
     this->_priority = error;
     return this->_priority;
   }
@@ -484,7 +484,7 @@ public:
     } // end second loop around surviving vertex.
   }
 
-  //ÕâÀïÃ¿¸öµã¶¼ÓĞ¸ö¶ş´ÎĞÍ£¬µãµÄ¶ş´ÎĞÍÊÇËùÔÚµÄËùÓĞÃæµÄ¶ş´ÎĞÍµÄºÍ
+  //è¿™é‡Œæ¯ä¸ªç‚¹éƒ½æœ‰ä¸ªäºŒæ¬¡å‹ï¼Œç‚¹çš„äºŒæ¬¡å‹æ˜¯æ‰€åœ¨çš„æ‰€æœ‰é¢çš„äºŒæ¬¡å‹çš„å’Œ
   static void InitQuadric(TriMeshType &m,BaseParameterClass *_pp)
   {
     QParameter *pp=(QParameter *)_pp;
@@ -505,12 +505,12 @@ public:
           facePlane.SetOffset( facePlane.Direction().dot((*fi).V(0)->cP()));                   
 
           QuadricType q;
-          q.ByPlane(facePlane);     //¼ÆËãÁËÕâ¸öÃæµÄ¶ş´ÎĞÍ     
+          q.ByPlane(facePlane);     //è®¡ç®—äº†è¿™ä¸ªé¢çš„äºŒæ¬¡å‹     
           
           // The basic < add face quadric to each vertex > loop
           for(int j=0;j<3;++j)
             if( (*fi).V(j)->IsW() )
-              QH::Qd((*fi).V(j)) += q; //½«Õâ¸öÃæµÄ¶ş´ÎĞÍ¼Óµ½Ã¿Ò»¸ö¶¥µãÉÏ
+              QH::Qd((*fi).V(j)) += q; //å°†è¿™ä¸ªé¢çš„äºŒæ¬¡å‹åŠ åˆ°æ¯ä¸€ä¸ªé¡¶ç‚¹ä¸Š
           
           for(int j=0;j<3;++j)
             if( (*fi).IsB(j) || pp->QualityQuadric )
@@ -532,10 +532,10 @@ public:
     
     if(pp->ScaleIndependent)
     {
-        //< Õâ¸ö¾ÍÊÇalignedbox
+        //< è¿™ä¸ªå°±æ˜¯alignedbox
       vcg::tri::UpdateBounding<TriMeshType>::Box(m);
       //Make all quadric independent from mesh size
-      // diagÊÇÌå¶Ô½ÇÏß
+      // diagæ˜¯ä½“å¯¹è§’çº¿
       pp->ScaleFactor = 1e8*pow(1.0/m.bbox.Diag(),6); // scaling factor
     }
 
@@ -547,8 +547,8 @@ public:
       for(VertexIterator vi=m.vert.begin();vi!=m.vert.end();++vi)
         if( ! (*vi).IsD() && (*vi).IsW())
         {
-            //ÕâÀïµÄÄ£°åÔÚtemplate <class TT> class EmptyCore: public TT
-            // Õâ¸öQ´æ´¢µÄÊÇÒ»¸östatic±äÁ¿£¬ÃûÎªdummyQuality,³õÖµÎª0
+            //è¿™é‡Œçš„æ¨¡æ¿åœ¨template <class TT> class EmptyCore: public TT
+            // è¿™ä¸ªQå­˜å‚¨çš„æ˜¯ä¸€ä¸ªstaticå˜é‡ï¼Œåä¸ºdummyQuality,åˆå€¼ä¸º0
           const double quality01squared = pow((double)((vi->Q()-minQ)/(maxQ-minQ)),2.0);
           QH::Qd(*vi) *= 1.0 + quality01squared * (pp->QualityWeightFactor-1.0); 
         }
