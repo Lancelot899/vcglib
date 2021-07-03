@@ -168,9 +168,11 @@ static void PerVertexNelsonMaxWeighted(ComputeMeshType &m)
 static void PerFace(ComputeMeshType &m)
 {
   RequirePerFaceNormal(m);
-  for(FaceIterator f=m.face.begin();f!=m.face.end();++f)
-    if( !(*f).IsD() )
-              f->N() = TriangleNormal(*f).Normalize();
+  for(FaceIterator f=m.face.begin();f!=m.face.end();++f) {
+    if( !(*f).IsD() ) {
+      f->N() = TriangleNormal(*f).Normalize();
+    }
+  }
 }
 
 
@@ -321,25 +323,30 @@ static void PerBitQuadFaceNormalized(ComputeMeshType &m)
 /// \brief Exploit bitquads to compute a per-polygon face normal
 static void PerBitPolygonFaceNormalized(ComputeMeshType &m)
 {
+  /// 计算每个面的法向量
   PerFace(m);
+
   tri::RequireCompactness(m);
   tri::RequireTriangularMesh(m);
   tri::UpdateFlags<ComputeMeshType>::FaceClearV(m);
   std::vector<VertexPointer> vertVec;
   std::vector<FacePointer> faceVec;
-  for(size_t i=0;i<m.face.size();++i)
-    if(!m.face[i].IsV())
-    {
+  
+  for(size_t i=0;i<m.face.size();++i) {
+    if(!m.face[i].IsV()) {
       tri::PolygonSupport<MeshType,MeshType>::ExtractPolygon(&(m.face[i]),vertVec,faceVec);
       CoordType nf(0,0,0);
-      for(size_t j=0;j<faceVec.size();++j)
+      for(size_t j=0;j<faceVec.size();++j) {
         nf+=faceVec[j]->N().Normalize() * DoubleArea(*faceVec[j]);
+      }
 
       nf.Normalize();
 
-      for(size_t j=0;j<faceVec.size();++j)
+      for(size_t j=0;j<faceVec.size();++j) {
         faceVec[j]->N()=nf;
+      }
     }
+  }
 }
 /// \brief Multiply the vertex normals by the matrix passed. By default, the scale component is removed.
 static void PerVertexMatrix(ComputeMeshType &m, const Matrix44<ScalarType> &mat, bool remove_scaling= true)

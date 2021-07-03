@@ -331,31 +331,43 @@ static int RemoveDuplicateFace(MeshType& m) {
     FaceIterator fi;
     EdgeIterator ei;
     VertexIterator vi;
+    /// 创建用户flag
     int referredBit = VertexType::NewBitFlag();
 
     int j;
     int deleted = 0;
 
-    for(vi=m.vert.begin();vi!=m.vert.end();++vi)
+    /// 遍历点，把所有的点的flag设置为空
+    for(vi=m.vert.begin();vi!=m.vert.end();++vi) {
       (*vi).ClearUserBit(referredBit);
+    }
 
-    for(fi=m.face.begin();fi!=m.face.end();++fi)
-      if( !(*fi).IsD() )
+    /// 遍历所有的面，将被面引用的点flag设置为ture
+    for(fi=m.face.begin();fi!=m.face.end();++fi) {
+      if( !(*fi).IsD() ) {
         for(j=0;j<(*fi).VN();++j)
           (*fi).V(j)->SetUserBit(referredBit);
+      }
+    }
 
-    for(ei=m.edge.begin();ei!=m.edge.end();++ei)
-      if( !(*ei).IsD() ){
+    /// 遍历所有的边，将被面引用的点flag设置为ture
+    for(ei=m.edge.begin();ei!=m.edge.end();++ei) {
+      if( !(*ei).IsD() ) {
         (*ei).V(0)->SetUserBit(referredBit);
         (*ei).V(1)->SetUserBit(referredBit);
       }
+    }
 
-    for(vi=m.vert.begin();vi!=m.vert.end();++vi)
+    /// 删除没有被标记的点
+    for(vi=m.vert.begin();vi!=m.vert.end();++vi) {
       if( (!(*vi).IsD()) && (!(*vi).IsUserBit(referredBit)))
       {
         if(DeleteVertexFlag) Allocator<MeshType>::DeleteVertex(m,*vi);
         ++deleted;
       }
+    }
+
+    /// 删除用户flag
     VertexType::DeleteBitFlag(referredBit);
     return deleted;
   }

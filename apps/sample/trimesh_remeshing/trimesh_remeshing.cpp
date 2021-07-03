@@ -74,10 +74,13 @@ int main( int argc, char **argv )
 
 
 	// Mesh cleaning
+	/// 删除没有被引用的点
 	tri::Clean<MyMesh>::RemoveUnreferencedVertex(original);
+
+	/// 将被删除的元素内存释放掉
 	Allocator<MyMesh>::CompactEveryVector(original);
 
-
+	
 	tri::UpdateNormal<MyMesh>::PerVertexNormalizedPerFaceNormalized(original);
 	tri::UpdateBounding<MyMesh>::Box(original);
 
