@@ -168,6 +168,7 @@ namespace tri {
         fs.clear();
         // find a non faux edge
         int se = -1;
+        /// isF使用来判断是不是faux边的
         for(int i=0; i<3; i++) if (!( tfp->IsF(i))) { se = i; break;}
 
         // all faux edges return an empty vertex vector!
@@ -175,6 +176,7 @@ namespace tri {
         if(tfp->IsV()) return;
 
         // initialize a pos on the first non faux edge
+        /// 创建一个半边迭代器
         face::Pos<typename TriMeshType::FaceType> start(tfp,se,tfp->V(se));
         face::Pos<typename TriMeshType::FaceType> p(start);
 
@@ -185,16 +187,44 @@ namespace tri {
         {
             assert(!p.F()->IsF(p.E()));
             vs.push_back(p.V());
+            /// 这里将边翻转为p.F中和p.V相连的另一条边
             p.FlipE();
+
+            /////   _
+            ///  /_\ /_\
+            ///  \ /_\ / 
+            ////   \ /
+            /// 从左到右，从上到下的面为，逆时针标记
+            ///  f0(0, 1, 2) f1(2, 1, 3) f2(3, 1, 4)
+            ///  f3(1, 0, 5) f4(1, 5, 6) f5(6, 1, 4)
+            ///              f6(6, 5, 7)
+            /// 
+            /// 假设fid = 4, vid = 1
+            /// 第一步得到的se = 0，表示从1到5的边，初始化为pos(4, 0, 0)
+            ///  p.FlipE()后得到pos(4, 2, 0)表示6到1的边
+            /// 这里似乎会死循环
             while( p.F()->IsF(p.E()) )
             {
+              /// 这里会翻转p.F最终得到和p.E相邻的另一个面(边的方向不变)
+              /// 在例子中会得到pos(5, 0, 1) 表示f5中6到1的边 --- loop0
+              /// pos(2, 1, 1) f2 : 1->4 --- loop1
+              /// pos(1, 2, 0) f1 : 3->1 --- loop2
+              /// pos(0, 1, 1) f0 : 1->2 --- loop3
+              /// pos(3, 1, 0) f3 : 0->1 --- loop4
                 p.FlipF();
                 if(!p.F()->IsV()) {
                   fs.push_back(p.F());
                   p.F()->SetV();
                 }
+                /// 这里再次翻转为p.F中和p.V相连的另一条边
+                /// 这个例子中会得到pos(5, 1, 1)表示f5中1到4的边 ---loop0
+                /// pos(2, 0, 1) f2 : 3->1 --- loop1
+                /// pos(1, 0, 1) f1 : 1->2 --- loop2
+                /// pos(0, 0, 1) f0 : 0->1 --- loop3
+                /// pos(3, 0, 0) f3 : 1->5 --- loop4
                 p.FlipE();
             }
+            /// 翻转v，得到新的点的，从而遍历新的v的one ring
             p.FlipV();
         } while(p!=start);
         //assert(vs.size() == fs.size()+2);
