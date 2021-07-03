@@ -30,7 +30,6 @@ struct AllTypes{
 		struct AEdgeType {};
 		struct AFaceType {};
 		struct AHEdgeType {};
-		struct ATetraType {};
 };
 
 

@@ -21,12 +21,7 @@
 *                                                                           *
 ****************************************************************************/
 
-#ifdef QT_OPENGL_LIB
-#include <QtOpenGL/qgl.h> 
-#else
 #include <GL/glew.h>
-#endif
-
 #include "trackball.h"
 #include<set>
 

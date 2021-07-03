@@ -1900,9 +1900,9 @@ public:
     // CIE xyY --> CIE XYZ
     static void xyYtoXYZ(double x, double y, double _Y, double &X, double &Y, double &Z)
     {
-        X = x * (_Y / y);
+        X = x * (Y / y);
         Y = _Y;
-        Z = (1.0 - x - y) * (_Y / y);
+        Z = (1.0 - x - y) * (Y / y);
     }
 
     static Color4<T> XYZtoxyY(const Color4<T> & color)
@@ -1916,11 +1916,11 @@ public:
     }
 
     // CIE XYZ --> CIE xyY
-    static void XYZtoxyY(double X, double Y, double Z, double &x, double &y, double &_Y)
+    static void XYZtoxyY(double X, double _Y, double Z, double &x, double &y, double &Y)
     {
         x = X / (X + Y + Z);
         y = Y / (X + Y + Z);
-        _Y = Y;
+        Y = _Y;
     }
 
     // XYZ (Illuminant src) --> XYZ (Illuminant dest) - [ILLUMINANT CHANGE]

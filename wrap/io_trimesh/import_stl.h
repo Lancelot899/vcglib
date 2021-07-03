@@ -24,7 +24,6 @@
 #ifndef __VCGLIB_IMPORT_STL
 #define __VCGLIB_IMPORT_STL
 #include <stdio.h>
-#include<algorithm>
 #include <wrap/io_trimesh/io_mask.h>
 
 namespace vcg {
@@ -61,11 +60,10 @@ public:
 };
 
 enum STLError {
-    E_NOERROR,       // 0
-    E_CANTOPEN,      // 1
-    E_UNESPECTEDEOF, // 2
-    E_MALFORMED,     // 3 
-  E_LAST
+    E_NOERROR,				// 0
+        // Errori di open
+    E_CANTOPEN,				// 1
+    E_UNESPECTEDEOF       		        // 2
 };
 
 static const char *ErrorMsg(int error)
@@ -74,23 +72,20 @@ static const char *ErrorMsg(int error)
   {
     "No errors",
     "Can't open file",
-    "Premature end of file",
-    "Malformed file",
+    "Premature End of file",
     };
 
-  if(error>=E_LAST || error<0) return "Unknown error";
+  if(error>2 || error<0) return "Unknown error";
   else return stl_error_msg[error];
-}
+};
 
 static bool LoadMask(const char * filename, int &mask)
 {
-  bool magicMode,colored;
+  bool magicMode;
   mask = Mask::IOM_VERTCOORD | Mask::IOM_FACEINDEX;
-  if(!IsSTLColored(filename, colored, magicMode))
-    return false;
-   
-  if(colored) mask |= Mask::IOM_FACECOLOR;
-    return true;
+  if(IsSTLColored(filename,magicMode))
+    mask |= Mask::IOM_FACECOLOR;
+  return true;
 }
 
 /* Try to guess if a stl has color
@@ -99,19 +94,11 @@ static bool LoadMask(const char * filename, int &mask)
  * - It has to be binary
  * - The per face attribute should be not zero
  *
- * return false in case of malformed files
  */
-static bool IsSTLColored(const char * filename, bool &coloredFlag, bool &magicsMode)
+static bool IsSTLColored(const char * filename, bool &magicsMode)
 {
-  coloredFlag=false;
-  magicsMode=false;
-  bool binaryFlag;
-  if(IsSTLBinary(filename,binaryFlag)==false)
+  if(IsSTLBinary(filename)==false)
     return false;
-  
-  if(binaryFlag==false)
-     return true; 
-   
    FILE *fp = fopen(filename, "rb");
    char buf[STL_LABEL_SIZE+1];
    fread(buf,sizeof(char),STL_LABEL_SIZE,fp);
@@ -136,54 +123,39 @@ static bool IsSTLColored(const char * filename, bool &coloredFlag, bool &magicsM
      if(attr!=0)
      {
       if(Color4b::FromUnsignedR5G5B5(attr) != Color4b(Color4b::White))
-        coloredFlag=true;
+    return true;
      }
    }
 
-   return true;
+   return false;
 }
 
-/* Try to guess if a stl is in binary format
- *
- * return false in case of malformed files
- */
-static bool IsSTLBinary(const char * filename, bool &binaryFlag)
+static bool IsSTLBinary(const char * filename)
 {
-  binaryFlag=false;
+  bool binary=false;
   FILE *fp = fopen(filename, "r");
   /* Find size of file */
   fseek(fp, 0, SEEK_END);
-  long file_size = ftell(fp);
-  unsigned int facenum;
+  int file_size = ftell(fp);
+  int facenum;
   /* Check for binary or ASCII file */
   fseek(fp, STL_LABEL_SIZE, SEEK_SET);
-  fread(&facenum, sizeof(unsigned int), 1, fp);
-  
+  fread(&facenum, sizeof(int), 1, fp);
   int expected_file_size=STL_LABEL_SIZE + 4 + (sizeof(short)+sizeof(STLFacet) )*facenum ;
-  if(file_size ==  expected_file_size) 
-  {
-    binaryFlag = true;
-    return true;
-  }
-  
-  // second check, sometimes the size is a bit wrong, 
-  // lets'make a test to check that we find only ascii stuff before assuming it is ascii
-  unsigned char tmpbuf[1000];
-  int byte_to_read = std::min(int(sizeof(tmpbuf)), int(file_size - 80));
-  fread(tmpbuf, byte_to_read,1,fp);
-  fclose(fp);
-  for(int i = 0; i < byte_to_read; i++)
+  if(file_size ==  expected_file_size) binary = true;
+  unsigned char tmpbuf[128];
+  fread(tmpbuf,sizeof(tmpbuf),1,fp);
+  for(unsigned int i = 0; i < sizeof(tmpbuf); i++)
     {
       if(tmpbuf[i] > 127)
           {
-            binaryFlag=true; 
-            if(abs(file_size-expected_file_size) > file_size/20 )
-              return false; // 
+            binary=true;
             break;
           }
     }
   // Now we know if the stl file is ascii or binary.
-  return true;
+  fclose(fp);
+  return binary;
 }
 
 static int Open( OpenMeshType &m, const char * filename, int &loadMask, CallBackPos *cb=0)
@@ -193,11 +165,8 @@ static int Open( OpenMeshType &m, const char * filename, int &loadMask, CallBack
       return E_CANTOPEN;
   fclose(fp);
   loadMask |= Mask::IOM_VERTCOORD | Mask::IOM_FACEINDEX;
-  bool binaryFlag;
-  if(!IsSTLBinary(filename,binaryFlag))
-    return E_MALFORMED;
-  
-  if(binaryFlag) return OpenBinary(m,filename,loadMask,cb);
+
+  if(IsSTLBinary(filename)) return OpenBinary(m,filename,loadMask,cb);
   else return OpenAscii(m,filename,cb);
 }
 
@@ -210,10 +179,8 @@ static int OpenBinary( OpenMeshType &m, const char * filename, int &loadMask, Ca
     return E_CANTOPEN;
   }
 
-  bool magicsMode,coloredFlag;
-  if(!IsSTLColored(filename,coloredFlag, magicsMode))
-    return E_MALFORMED;
-  if(!coloredFlag) 
+  bool magicsMode;
+  if(!IsSTLColored(filename,magicsMode))
     loadMask = loadMask & (~Mask::IOM_FACECOLOR);
 
   int facenum;

@@ -26,6 +26,8 @@
 #include <limits>
 #include <stdio.h>
 #include <assert.h>
+#include <algorithm>
+#include <vector>
 #include <vcg/space/box2.h>
 #include <vcg/space/rect_packer.h>
 #include <vcg/space/point2.h>
@@ -45,29 +47,29 @@ class PolyPacker
 
 public:
 
-  static Box2x getPolyBB(const std::vector<Point2x> &poly)
+  static Box2f getPolyBB(const std::vector<Point2x> &poly)
   {
-    Box2x bb;
+    Box2f bb;
     for(size_t i=0;i<poly.size();++i)
       bb.Add(poly[i]);
 
     return bb;
   }
 
-  static Box2x getPolyOOBB(const std::vector<Point2x> &poly, float &rot)
+  static Box2f getPolyOOBB(const std::vector<Point2x> &poly, float &rot)
   {
     const int stepNum=32;
     float bestAngle;
     float bestArea = std::numeric_limits<float>::max();
-    Box2x bestBB;
+    Box2f bestBB;
 
     for(int i=0;i<stepNum;++i)
     {
       float angle = float(i)*(M_PI/2.0)/float(stepNum);
-      Box2x bb;
+      Box2f bb;
       for(size_t j=0;j<poly.size();++j)
       {
-        Point2x pp=poly[j];
+        Point2f pp=poly[j];
         pp.Rotate(angle);
         bb.Add(pp);
       }
@@ -86,7 +88,7 @@ public:
 static  bool PackAsEqualSquares(const std::vector< std::vector<Point2x> > &polyVec,
                   const Point2i containerSizeX,
                   std::vector<Similarity2x> &trVec,
-                  Point2x &/*coveredContainer*/)
+                  Point2x &coveredContainer)
 {
   int minSide = std::min(containerSizeX[0],containerSizeX[1]);
   const vcg::Point2i containerSize(minSide,minSide);
@@ -96,7 +98,7 @@ static  bool PackAsEqualSquares(const std::vector< std::vector<Point2x> > &polyV
 
   trVec.clear();
   trVec.resize(polyVec.size());
-  Box2x bbMax;
+  Box2f bbMax;
   std::vector<Box2x> bbVec;
   for(size_t i=0;i<polyVec.size();++i)
   {
@@ -137,7 +139,7 @@ static bool PackAsAxisAlignedRect(const std::vector< std::vector<Point2x> > &pol
     assert(polyVec[i].size()>0);
     bbVec.push_back(getPolyBB(polyVec[i]));
   }
-  return RectPacker<SCALAR_TYPE>::Pack(bbVec,containerSizeX,trVec,coveredContainer);
+  return RectPacker<float>::Pack(bbVec,containerSizeX,trVec,coveredContainer);
 }
 
 static bool PackAsObjectOrientedRect(const std::vector< std::vector<Point2x> > &polyVec,
@@ -148,7 +150,7 @@ static bool PackAsObjectOrientedRect(const std::vector< std::vector<Point2x> > &
   trVec.clear();
   trVec.resize(polyVec.size());
   std::vector<Box2x> bbVec;
-  std::vector<SCALAR_TYPE> rotVec;
+  std::vector<float> rotVec;
   for(size_t i=0;i<polyVec.size();++i)
   {
     float rot;
@@ -156,7 +158,7 @@ static bool PackAsObjectOrientedRect(const std::vector< std::vector<Point2x> > &
     rotVec.push_back(rot);
   }
 
-  bool ret= RectPacker<SCALAR_TYPE>::Pack(bbVec,containerSizeX,trVec,coveredContainer);
+  bool ret= RectPacker<float>::Pack(bbVec,containerSizeX,trVec,coveredContainer);
 
   for(size_t i=0;i<polyVec.size();++i)
   {

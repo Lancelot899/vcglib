@@ -293,7 +293,8 @@ namespace vcg {
 			BB.Add(polygon[i].P1());
 		}
 		if (!BB.IsIn(p))return false;
-        //take 4 directions
+		ScalarType size=BB.Diag();
+		///take 4 directions
 		int inside_test=0;
 		for (int dir=0;dir<4;dir++)
 		{

@@ -29,6 +29,8 @@
 #ifndef __VCG_FACE_POS
 #define __VCG_FACE_POS
 
+#include <assert.h>
+
 namespace vcg {
 namespace face {
 
@@ -48,7 +50,11 @@ bool IsManifold(FaceType const & f,  const int j );
     around the faces of a vertex without requiring the VF topology.
  */
 
-
+//这是一个半边，记录了face，vertex和half-edge的头
+//       a
+//      /\
+//   b /__\ c
+//  a->b->c pos(f,0,a) 代表的是半边a->b
 template <class FaceType>
 class Pos
 {
@@ -129,12 +135,12 @@ public:
     }
 
     /// Assignment operator
-    //inline PosType & operator = ( const PosType & h ){
-    //    f=h.f;
-    //    z=h.z;
-    //    v=h.v;
-    //    return *this;
-    //}
+    inline PosType & operator = ( const PosType & h ){
+        f=h.f;
+        z=h.z;
+        v=h.v;
+        return *this;
+    }
 
     /// Set to null the half-edge
     void SetNull(){
@@ -167,17 +173,33 @@ public:
     // vecchi parametri:     	FaceType * & f, VertexType * v, int & j
 
     /// It moves on the adjacent face incident to v, via a different edge that j
+    /// 通过这个NextE能遍历到打出去或者打进来的一个点的所有半边(一开始指向点那么就指向点，否则远离点)
+    /// 如果点在边缘，会遍历完指向点和远离点的所有半边
     void NextE()
     {
+		//f _a _  d
+		// \ /_\ /
+		// b   c
+        // 以f0(a,b,c) f1(a,c,d), f2(f, b, a), pos(f0, 0, a)为例
         assert( f->V(z)==v || f->V(f->Next(z))==v ); // L'edge j deve contenere v
+        //这一步会得到pos(f0,2,a)
         FlipE();
+        //这一步会得到pos(f1,1,a)
         FlipF();
         assert( f->V(z)==v || f->V(f->Next(z))==v );
+        //再调用一次
+        //首先得到pos(f1,0,a), 然后得到pos(f2,2,a)
     }
     // Cambia edge mantenendo la stessa faccia e lo stesso vertice
     /// Changes edge maintaining the same face and the same vertex
     void FlipE()
     {
+		//   a 
+		//  /_\
+		// b   c
+		// 以f0(a,b,c), pos(f0, 0, a)为例
+        // f0->V(0) == a,进入else, 所以得到pos(f0, 2, a)
+        // pos(f0, 2, a) f0->V(f->Next(2)) == a，进入if 所以得到pos(f0, 0, a)
         assert(f->V(f->Prev(z))!=v && (f->V(f->Next(z))==v || f->V((z+0)%f->VN())==v));
         if(f->V(f->Next(z))==v) z=f->Next(z);
         else z= f->Prev(z);
@@ -193,14 +215,24 @@ public:
     /// Changes face maintaining the same vertex and the same edge
     void FlipF()
     {
+        // 翻转F必须要保证v记录的是半边的终点，然后通过面面表查找反转后半边对应的那个面
+        //   a _  d
+        //  /_\ /
+        // b   c
+        // f0(a,b,c) f1(a,c,d)
+        // 以pos(f0, 2, a)为例
+        // 首先f->FFp(2)会得到f1
+        // f->FFi(2)会得到1
+        // 因此返回了pos(f1, 1, a)
         assert( f->FFp(z)->FFp(f->FFi(z))==f );  // two manifoldness check
-        // Check that pos vertex is one of the current z-th edge and it is different from the vert opposite to the edge.
+        // Check that pos vertex is one of the current z-th edge and it is different from the vert opposite to the edge. 
         assert(f->V(f->Prev(z))!=v && (f->V(f->Next(z))==v || f->V((z))==v));
         FaceType *nf=f->FFp(z);
         int nz=f->FFi(z);
-        assert(nf->V(nf->Prev(nz))!=v && (nf->V(nf->Next(nz))==v || nf->V(nz)==v));
+        assert(nf->V(nf->Prev(nz))!=v && (nf->V(nf->Next(nz))==v || nf->V((nz))==v));
         f=nf;
         z=nz;
+        assert(f->V(f->Prev(z))!=v && (f->V(f->Next(z))==v || f->V(z)==v));
     }
 
     /// Changes vertex maintaining the same face and the same edge
@@ -288,10 +320,38 @@ public:
         //assert(f->FFp(z)==f); // f is border along j
     }
 
+    /// Finds the next Crease half-edge border
+    /// TODO change crease flag with something more generic (per edge)
+    void NextCrease( )
+    {
+        assert(f->V(f->Prev(z))!=v && (f->V(f->Next(z))==v || f->V(z)==v));
+        assert(IsCrease()); // f is border along j
+        // Si deve cambiare faccia intorno allo stesso vertice v
+        //finche' non si trova una faccia di bordo.
+        do
+        {
+            FlipE();
+            if (!IsCrease()) FlipF();
+        }
+        while(!IsCrease());
+
+        // L'edge j e' di bordo e deve contenere v
+        assert(IsCrease() &&( f->V(z)==v || f->V(f->Next(z))==v ));
+
+        FlipV();
+        assert(f->V(f->Prev(z))!=v && (f->V(f->Next(z))==v || f->V(z)==v));
+    }
+
     /// Checks if the half-edge is of border
     bool IsBorder()const
     {
         return face::IsBorder(*f,z);
+    }
+
+    /// Checks if the half-edge is of crease
+    bool IsCrease() const
+    {
+        return f->IsCrease(z);
     }
 
     bool IsFaux() const
@@ -303,36 +363,7 @@ public:
     {
         return face::IsManifold(*f,z);
     }
-    
-    void NextEdgeS( )
-    {
-        assert(f->V(f->Prev(z))!=v && (f->V(f->Next(z))==v || f->V(z)==v));
-        assert(IsEdgeS());
-        do
-        {
-            FlipE();
-            if (!IsEdgeS()) FlipF();
-        }
-        while(!IsEdgeS());
 
-        assert(IsEdgeS() &&( f->V(z)==v || f->V(f->Next(z))==v ));
-
-        FlipV();
-        assert(f->V(f->Prev(z))!=v && (f->V(f->Next(z))==v || f->V(z)==v));
-    }
-
-    bool IsFaceS() const { return f->IsS();}
-    bool IsEdgeS() const { return f->IsFaceEdgeS(z);}
-    bool IsVertS() const { return v->IsS();}
-    
-    /*!
-     * Returns the angle (in radiant) between the two edges incident on V.
-     */
-    ScalarType AngleRad() const
-    {
-        return Angle(f->V(f->Prev(z))->cP()-v->cP(), f->V(f->Next(z))->cP()-v->cP());
-    }
-    
     /*!
      * Returns the number of vertices incident on the vertex pos is currently pointing to.
      */
@@ -497,10 +528,7 @@ public:
         f = t->VFp(z);
         z = t->VFi(z);
     }
-	void operator++(int)
-	{
-		++(*this);
-	}
+
 };
 
 /*@}*/

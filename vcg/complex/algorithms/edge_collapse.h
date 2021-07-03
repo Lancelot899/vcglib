@@ -20,8 +20,8 @@
 * for more details.                                                         *
 *                                                                           *
 ****************************************************************************/
-#ifndef _VCG_EDGE_COLLAPSE_
-#define _VCG_EDGE_COLLAPSE_
+#ifndef __VCG_TETRA_TRI_COLLAPSE
+#define __VCG_TETRA_TRI_COLLAPSE
 
 
 #include<vcg/simplex/face/pos.h>
@@ -53,59 +53,81 @@ private:
 template <class TRI_MESH_TYPE, class VertexPair>
 class EdgeCollapser
 {
-public:
-  typedef	TRI_MESH_TYPE TriMeshType;
+    public:
+  /// The tetrahedral mesh type
+  typedef	 TRI_MESH_TYPE TriMeshType;
+  /// The face type
   typedef	typename TriMeshType::FaceType FaceType;
-  typedef	typename FaceType::VertexType VertexType;
+    /// The vertex type
+    typedef	typename FaceType::VertexType VertexType;
   typedef	typename FaceType::VertexPointer VertexPointer;
-  typedef	typename FaceType::VertexType::CoordType CoordType;
+  /// The vertex iterator type
+  typedef	typename TriMeshType::VertexIterator VertexIterator;
+  /// The tetra iterator type
+  typedef	typename TriMeshType::FaceIterator FaceIterator;
+  /// The coordinate type
+    typedef	typename FaceType::VertexType::CoordType CoordType;
+  /// The scalar type
   typedef	typename TriMeshType::VertexType::ScalarType ScalarType;
-  typedef typename vcg::face::VFIterator<FaceType>  VFIterator;
-  typedef typename std::vector<vcg::face::VFIterator<FaceType> > VFIVec;
-
+  ///the container of tetrahedron type
+  typedef typename TriMeshType::FaceContainer FaceContainer;
+  ///the container of vertex type
+  typedef typename TriMeshType::VertContainer VertContainer;
+  ///half edge type
+  //typedef typename TriMeshType::FaceType::EdgeType EdgeType;
+    /// vector of pos
+//	typedef typename std::vector<EdgeType> EdgeVec;
+    ///of VFIterator
+    typedef typename vcg::face::VFIterator<FaceType>  VFI;
+    /// vector of VFIterator
+    typedef typename std::vector<vcg::face::VFIterator<FaceType> > VFIVec;
 private:
   struct EdgeSet
   {
-     VFIVec av0, av1, av01;
-     VFIVec & AV0() { return av0;}  // Faces incident only on v0
-//     VFIVec & AV1() { return av1;}  // Faces incident only on v1
-     VFIVec & AV01(){ return av01;} // Faces incident only on both v0 and v1
+     VFIVec av0,av1,av01;
+     VFIVec & AV0() { return av0;}
+     VFIVec & AV1() { return av1;}
+     VFIVec & AV01(){ return av01;}
   };
 
-  static void FindSets(VertexPair &p, EdgeSet &es)
-  {
+  static void FindSets(VertexPair &p, EdgeSet &es) {
     VertexType * v0 = p.V(0);
     VertexType * v1 = p.V(1);
-    
-    es.AV0().clear(); 
-//    es.AV1().clear(); 
-    es.AV01().clear();
-    
-    for(VFIterator x = VFIterator(v0); !x.End(); ++x)
-    {
-      bool foundV1=false;      
-      for(int j=0;j<3;++j)
-        if( x.f->V(j)==v1 )	{
-          foundV1 = true;
-          break;
+
+    es.AV0().clear();  // Facet incidenti in v0
+    es.AV1().clear();  // Facet incidenti in v1
+    es.AV01().clear(); // Facet incidenti in v0 e v1
+
+    VFI x;
+
+    for( x.f = v0->VFp(), x.z = v0->VFi(); x.f!=0; ++x) {
+        int zv1 = -1;
+
+        for (int j = 0; j < 3; ++j) {
+            if (x.f->V(j) == &*v1) {
+                zv1 = j;
+                break;
+            }
         }
-      if(!foundV1)  es.AV0().push_back( x ); // v1 not found -> so the face is incident only on v0
-      else         es.AV01().push_back( x );
+        //< 遍历v0周围的面，如果这个面有v1那么放在AV01中，否则放在AV0中
+        if(zv1==-1) 	es.AV0().push_back( x ); // la faccia x.f non ha il vertice v1 => e' incidente solo in v0
+        else    		es.AV01().push_back( x );
     }
-    
-//    for( VFIterator x = VFIterator(v1); !x.End(); ++x)
-//    {
-//      bool foundV0=false;      
-//      for(int j=0;j<3;++j)
-//        if( x.f->V(j)==v0 )	{
-//          foundV0=true;
-//          break;
-//        }
-//      if(!foundV0)	es.AV1().push_back( x ); // v0 not found -> so the face is incident only on v0
-//    }
+
+    for( x.f = v1->VFp(), x.z = v1->VFi(); x.f!=0; ++x ) {
+        int zv0 = -1;
+
+        for (int j = 0; j < 3; ++j) {
+            if (x.f->V(j) == &*v0) {
+                zv0 = j;
+                break;
+            }
+        }
+        // 这里查找v1周围不包含v0的面
+        if(zv0==-1)	es.AV1().push_back( x ); // la faccia x.f non ha il vertice v1 => e' incidente solo in v0
+    }
   }
-  
-  /*
+/*
     Link Conditions test, as described in
 
     Topology Preserving Edge Contraction
@@ -132,6 +154,7 @@ private:
 public:
   static bool LinkConditions(VertexPair &pos)
   {
+    typedef typename vcg::face::VFIterator<FaceType> VFIterator;
     // at the end of the loop each vertex must be counted twice
     // except for boundary vertex.
     std::map<VertexPointer,int> VertCnt;
@@ -206,86 +229,47 @@ public:
     return true;
   }
 
-  // Main Collapsing Function: the one that actually performs the collapse of the edge denoted by the VertexPair c
-  // Remember that v[0] will be deleted and v[1] will survive with the position indicated by p
-  // To do a collapse onto a vertex simply pass p as the position of the surviving vertex
-  static int Do(TriMeshType &m, VertexPair & c, const Point3<ScalarType> &p, const bool preserveFaceEdgeS = false)
-  {
-    EdgeSet es;
-    FindSets(c,es);
-    
-    int n_face_del=0 ;    
+  // Main function; the one that actually make the collapse
+  // remember that v[0] will be deleted and v[1] will survive (eventually with a new position)
+  // hint to do a 'collapse onto a vertex simply pass p as the position of the surviving vertex
+  static int Do(TriMeshType &m, VertexPair & c, const Point3<ScalarType> &p) {
+	  EdgeSet es;
+      // 存储哪些面的指针有v0和v0，哪些面只有v0，哪些面只有v1，这些指针是从点遍历出来的，会记录点对应的face和这个点是face的第几个点
+	  FindSets(c, es);
+	  typename VFIVec::iterator i;
+	  int n_face_del = 0;
 
-	static int VtoE[3][3] = { -1,  0,  2,
-	                           0, -1,  1,
-	                           2,  1, -1 };
+      // 遍历那些既有v0又有v1的面
+	  for (i = es.AV01().begin(); i != es.AV01().end(); ++i) {
+		  FaceType& f = *((*i).f);
+		  assert(f.V((*i).z) == c.V(0));
+          // 这里将点迭代面的链表打断，然后删除它
+		  vcg::face::VFDetach(f, ((*i).z + 1) % 3);
+		  vcg::face::VFDetach(f, ((*i).z + 2) % 3);
+		  Allocator<TriMeshType>::DeleteFace(m, f);
+		  n_face_del++;
+	  }
 
-//	bool toSel = false;
-
-	VertexType* top[2];
-	std::map <VertexPointer, bool> toSel;
-
-	std::vector<VertexPointer> v2s; v2s.reserve(2);
-
-    for(auto i=es.AV01().begin();i!=es.AV01().end();++i)
-    {
-      FaceType  & f = *((*i).f);
-      assert(f.V((*i).z) == c.V(0));
-
-	    if (preserveFaceEdgeS && f.IsFaceEdgeS(VtoE[((*i).z+1)%3][((*i).z+2)%3]))
-		{
-//			std::cout << "2 " <<std::endl;
-			if (f.V(((*i).z+1)%3) == c.V(1))
-				v2s.push_back(f.V(((*i).z+2)%3));
-			else
-				v2s.push_back(f.V(((*i).z+1)%3));
-		}
-
-      vcg::face::VFDetach(f,((*i).z+1)%3);
-      vcg::face::VFDetach(f,((*i).z+2)%3);
-      Allocator<TriMeshType>::DeleteFace(m,f);
-      n_face_del++;
+      //当删除完了V0和V1的共同面之后，删除点V(0)
+        //set Vertex Face topology
+      //先将原来连接V(0)的那些边连到V(1)上(这样也缝合了前面删面带来的洞，但是三角形质量可能会下降)
+    for(i=es.AV0().begin();i!=es.AV0().end();++i) {
+        (*i).f->V((*i).z) = c.V(1);					    // In tutte le facce incidenti in v0, si sostituisce v0 con v1
+        (*i).f->VFp((*i).z) = (*i).f->V((*i).z)->VFp(); // e appendo la lista di facce incidenti in v1 a questa faccia
+        (*i).f->VFi((*i).z) = (*i).f->V((*i).z)->VFi();
+        (*i).f->V((*i).z)->VFp() = (*i).f;
+        (*i).f->V((*i).z)->VFi() = (*i).z;
     }
-    
-    // Very LOW LEVEL update of VF Adjacency;  
-    // for all the faces incident in v[0]
-    // - v[0] will be deleted so we substitute v[0] with v[1]
-    // - we prepend that face to the list of the faces incident on v[1]
-    for(auto i=es.AV0().begin();i!=es.AV0().end();++i)
-    {
-		      FaceType  & f = *((*i).f);
 
-		if (preserveFaceEdgeS)
-		{
-			for (size_t j = 0; j < v2s.size(); ++j)
-			{
-				if ((*i).f->V(((*i).z+1)%3) == v2s[j])
-				{
-					(*i).f->SetFaceEdgeS(VtoE[((*i).z)%3][((*i).z+1)%3]);
-					break;
-				}
-				if ((*i).f->V(((*i).z+2)%3) == v2s[j])
-				{
-					(*i).f->SetFaceEdgeS(VtoE[((*i).z)%3][((*i).z+2)%3]);
-					break;
-				}
-			}
-		}
-      (*i).f->V((*i).z) = c.V(1);	// For each face in v0 we substitute v0 with v1
-      (*i).f->VFp((*i).z) = c.V(1)->VFp(); 
-      (*i).f->VFi((*i).z) = c.V(1)->VFi();
-      c.V(1)->VFp() = (*i).f;
-      c.V(1)->VFi() = (*i).z;
-
-    }
-    
+    //然后删除点
     Allocator<TriMeshType>::DeleteVertex(m,*(c.V(0)));
+    //最后吧v1的位置换到设置好的点上去(试图提升三角形质量)
     c.V(1)->P()=p;
     return n_face_del;
-  }
-  
+}
+
 };
 
-} // end namespace tri
-} // end namespace vcg
+}
+}
 #endif

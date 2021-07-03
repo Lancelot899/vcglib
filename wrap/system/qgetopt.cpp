@@ -173,11 +173,6 @@ QString GetOpt::usage() {
     }
     u += "]";
   }
-
-  if(unlimitedArgs) {
-	u += " [ARGS]";
-  }
-
   if(has_options) {
     u += " [-";
     for(int i = 0; i < options.size(); i++) {
@@ -186,8 +181,6 @@ QString GetOpt::usage() {
     }
     u += "]";
   }
-  u += "\n\n";
-  u += help;
   u += "\n\n";
   //compute maxlen:
   int maxlen = 0;
@@ -259,7 +252,7 @@ bool GetOpt::parse(QString &error) {
   for(int i = 0; i < args.size(); i++) {
     QString arg = args[i];
     if(args[i] == "-h" || args[i] == "--help") {
-	  cout << qPrintable(usage()) << endl;
+      cout << qPrintable(usage()) << endl << qPrintable(help) << endl;
       exit(0);
     }
     //long option

@@ -24,6 +24,7 @@
 #define RINGWALKER_H
 
 #include <vcg/simplex/face/jumping_pos.h>
+#include <vcg/complex/algorithms/update/flag.h>
 
 namespace vcg
 {

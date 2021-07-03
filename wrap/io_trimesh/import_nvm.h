@@ -67,12 +67,10 @@ typedef typename OpenMeshType::EdgeIterator EdgeIterator;
 static void readline(FILE *fp, char *line, int max=1000){
     int i=0;
     char c;
-    unsigned int rc = 0;
-    rc = fscanf(fp, "%c", &c);
+    fscanf(fp, "%c", &c);
     while( (c!=10) && (c!=13) && (i<max-1) ){
-        if (rc == 1)
-            line[i++] = c;
-        rc = fscanf(fp, "%c", &c);
+        line[i++] = c;
+        fscanf(fp, "%c", &c);
     }
     line[i] = '\0'; //end of string
 }
@@ -86,6 +84,15 @@ static bool ReadHeader(FILE *fp,unsigned int &num_cams){
     sscanf(line, "%d", &num_cams);
     return true;
 }
+
+static bool ReadHeader(const char * filename,unsigned int &/*num_cams*/, unsigned int &/*num_points*/){
+    FILE *fp = fopen(filename, "r");
+    if(!fp) return false;
+    ReadHeader(fp);
+    fclose(fp);
+    return true;
+}
+
 
 static int Open( OpenMeshType &m, std::vector<Shot<ScalarType> >  & shots,
                  std::vector<std::string > & image_filenames,
@@ -147,7 +154,7 @@ static int Open( OpenMeshType &m, std::vector<Shot<ScalarType> >  & shots,
     shots[i].Intrinsics.FocalMm    = f/100.0f;
     shots[i].Intrinsics.k[0] = 0.0;//k1; To be uncommented when distortion is taken into account reliably
     shots[i].Intrinsics.k[1] = 0.0;//k2;
-    shots[i].Intrinsics.PixelSizeMm = vcg::Point2<ScalarType>(ScalarType(0.01), ScalarType(0.01));
+    shots[i].Intrinsics.PixelSizeMm = vcg::Point2<ScalarType>(0.01,0.01);
     QImageReader sizeImg(QString::fromStdString(image_filenames[i]));
     QSize size=sizeImg.size();
     shots[i].Intrinsics.ViewportPx = vcg::Point2i(size.width(),size.height());
@@ -165,18 +172,14 @@ static int Open( OpenMeshType &m, std::vector<Shot<ScalarType> >  & shots,
   for(uint i = 0; i < num_points;++i,++vi){
     float x,y,z;
     unsigned int r,g,b,i_cam, key_sift,n_corr;
-    uint readValues = fscanf(fp,"%f %f %f ",&x,&y,&z);
-    if (readValues < 3) qDebug() << "Point " << i << ": only " << readValues << " coordinates read!";
+    fscanf(fp,"%f %f %f ",&x,&y,&z);
     (*vi).P() = vcg::Point3<typename OpenMeshType::ScalarType>(x,y,z);
-    readValues = fscanf(fp,"%d %d %d ",&r,&g,&b);
-    if (readValues < 3) qDebug() << "Point " << i << ": only " << readValues << " color values read!";
+    fscanf(fp,"%d %d %d ",&r,&g,&b);
     (*vi).C() = vcg::Color4b(r,g,b,255);
 
-    readValues = fscanf(fp,"%d ",&n_corr);
-    if (readValues < 1) qDebug() << "Point " << i << ": no n correspondences read!";
+    fscanf(fp,"%d ",&n_corr);
     for(uint j = 0; j < n_corr; ++j){
-      readValues = fscanf(fp,"%d %d %f %f ",&i_cam,&key_sift,&x,&y);
-      if (readValues != 3) qDebug() << "Point " << i << "; Corresp: " << j << ": only " << readValues << " values read!";
+      fscanf(fp,"%d %d %f %f ",&i_cam,&key_sift,&x,&y);
       Correspondence corr(i_cam,key_sift,x,y);
       ch[i].push_back(corr);
     }

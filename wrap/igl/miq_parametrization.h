@@ -31,7 +31,7 @@
 #include <igl/cut_mesh_from_singularities.h>
 #include <igl/find_cross_field_singularities.h>
 #include <igl/compute_frame_field_bisectors.h>
-#include <igl/copyleft/comiso/miq.h>
+#include <igl/comiso/miq.h>
 #include <vcg/complex/algorithms/parametrization/uv_utils.h>
 #include <vcg/complex/algorithms/mesh_to_matrix.h>
 
@@ -74,8 +74,6 @@ public:
         bool crease_as_feature;
         //true if roound selected vert
         bool round_selected;
-        //the anisotropy in MIQ sense (see paper)
-        double miqAnisotropy;
 
         MIQParameters()
         {
@@ -91,7 +89,6 @@ public:
             Ndir=4;
             crease_thr=0.2;
             hexaLine=false;
-            miqAnisotropy=1;
         }
     };
 
@@ -106,8 +103,7 @@ public:
             for (int j=0;j<3;j++)
             {
                 //if (!trimesh.face[i].IsB(j))continue;
-                //if (!trimesh.face[i].IsCrease(j))continue;
-                if (!trimesh.face[i].IsFaceEdgeS(j))continue;
+                if (!trimesh.face[i].IsCrease(j))continue;
 
                 feature_lines.push_back(std::vector<int>());
                 feature_lines.back().push_back(i);
@@ -167,9 +163,9 @@ private:
             }
         }
 
-        igl::copyleft::comiso::miq(V,F,X1,X2,UV,FUV,MiqP.gradient,MiqP.stiffness,MiqP.directRound,
+        igl::miq(V,F,X1,X2,UV,FUV,MiqP.gradient,MiqP.stiffness,MiqP.directRound,
                  MiqP.stiffness_iter,MiqP.local_iter,MiqP.doRound,MiqP.round_singularities,
-                 extra_round,hard_features,MiqP.miqAnisotropy);
+                 extra_round,hard_features);
 
         // then copy UV
         for (size_t i=0;i<trimesh.face.size();i++)
@@ -291,7 +287,7 @@ private:
 //                 MMatch,isSingularity,singularityIndex,Seams,
 //                 UV,FUV,MiqP.gradient,MiqP.stiffness,MiqP.directRound,
 //                 MiqP.stiffness_iter,MiqP.local_iter,MiqP.doRound,MiqP.round_singularities,extra_round,hard_features);
-        igl::copyleft::comiso::miq(V,F,X1_combed,X2_combed,
+        igl::miq(V,F,X1_combed,X2_combed,
                  UV,FUV,MiqP.gradient,MiqP.stiffness,MiqP.directRound,
                  MiqP.stiffness_iter,MiqP.local_iter,MiqP.doRound,MiqP.round_singularities,extra_round,hard_features);
 
@@ -317,8 +313,7 @@ public:
             for (int j=0;j<mesh.face[i].VN();j++)
             {
                 FaceType *f0=&mesh.face[i];
-                //f0->ClearCrease(j);
-                f0->ClearFaceEdgeS(j);
+                f0->ClearCrease(j);
             }
 
 
@@ -328,14 +323,12 @@ public:
                 FaceType *f0=&mesh.face[i];
                 FaceType *f1=f0->FFp(j);
 
-                //if (f0==f1){f0->SetCrease(j);continue;}
-                if (f0==f1){f0->SetFaceEdgeS(j);continue;}
+                if (f0==f1){f0->SetCrease(j);continue;}
 
                 CoordType N0=f0->N();
                 CoordType N1=f1->N();
                 if ((N0*N1)>thr)continue;
-                //f0->SetCrease(j);
-                f0->SetFaceEdgeS(j);
+                f0->SetCrease(j);
 
             }
     }
@@ -343,8 +336,8 @@ public:
     static void MIQParametrize(MeshType &trimesh,
                                MIQParameters &MiqP)
     {
-//        if (MiqP.crease_as_feature)
-//            SetCreases(trimesh,MiqP.crease_thr);
+        if (MiqP.crease_as_feature)
+            SetCreases(trimesh,MiqP.crease_thr);
 
         if (MiqP.Ndir==4)
             CrossFieldParam(trimesh,MiqP);

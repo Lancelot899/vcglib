@@ -401,9 +401,7 @@ namespace vcg{
 		{
 			int	ix,iy,iz;
 			for( iz = to_explore.min.Z();iz <=	to_explore.max.Z(); ++iz)
-			{
 				for(iy =to_explore.min.Y(); iy	<=to_explore.max.Y(); ++iy)
-				{
 					for(ix =to_explore.min.X(); ix	<= to_explore.max.X();++ix)
 					{
 						// this test is to avoid to re-process already analyzed cells.
@@ -429,13 +427,12 @@ namespace vcg{
 								}
 							}
 						}
-					}
-				}
-			}
 
-			////sort the elements in Elems and take a iterator to the last one
-			std::sort(Elems.begin(),Elems.end());
-			CurrentElem=Elems.rbegin();
+					}
+
+				////sort the elements in Elems and take a iterator to the last one
+				std::sort(Elems.begin(),Elems.end());
+				CurrentElem=Elems.rbegin();
 
 			return((Elems.size()==0)||(Dist()>radius));
 		}

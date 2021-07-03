@@ -38,11 +38,11 @@
 #include <vcg/complex/algorithms/inertia.h>
 #include <vcg/complex/algorithms/nring.h>
 
-#include <Eigen/Core>
-#include <Eigen/QR>
-#include <Eigen/LU>
-#include <Eigen/SVD>
-#include <Eigen/Eigenvalues>
+#include <eigen3/Eigen/Core>
+#include <eigen3/Eigen/QR>
+#include <eigen3/Eigen/LU>
+#include <eigen3/Eigen/SVD>
+#include <eigen3/Eigen/Eigenvalues>
 
 
 namespace vcg {

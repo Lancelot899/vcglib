@@ -148,7 +148,7 @@ public:
   void GetBBox( BoxType & bb ) const
   {	  bb.Set(this->cP());  }
 
-          };
+};
 
           
 /*

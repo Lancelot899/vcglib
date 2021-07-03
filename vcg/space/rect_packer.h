@@ -28,7 +28,6 @@
 #include <algorithm>
 #include <vector>
 #include <ctime>
-#include <vcg/space/box2.h>
 #include <vcg/space/point2.h>
 #include <vcg/math/similarity2.h>
 

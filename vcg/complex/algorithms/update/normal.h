@@ -24,7 +24,10 @@
 #ifndef __VCG_TRI_UPDATE_NORMALS
 #define __VCG_TRI_UPDATE_NORMALS
 
+#include <vcg/complex/algorithms/update/flag.h>
 #include <vcg/complex/algorithms/polygon_support.h>
+#include <vcg/math/matrix44.h>
+#include <vcg/complex/exception.h>
 
 namespace vcg {
 namespace tri {
@@ -89,7 +92,7 @@ static void PerVertex(ComputeMeshType &m)
  for(FaceIterator f=m.face.begin();f!=m.face.end();++f)
    if( !(*f).IsD() && (*f).IsR() )
    {
-    typename VertexType::NormalType t = vcg::TriangleNormal(*f);
+    typename FaceType::NormalType t = vcg::TriangleNormal(*f);
 
     for(int j=0; j<(*f).VN(); ++j)
      if( !(*f).V(j)->IsD() && (*f).V(j)->IsRW() )
@@ -99,12 +102,11 @@ static void PerVertex(ComputeMeshType &m)
 
 static void PerFacePolygonal(ComputeMeshType &m)
 {
-  RequirePerFaceNormal(m);  
-  for(FaceIterator fi=m.face.begin();fi!=m.face.end();++fi)
-  {
-    if( !(*fi).IsD() )
-      fi->N() = PolygonNormal(*fi).Normalize();
-  }
+for(FaceIterator fi=m.face.begin();fi!=m.face.end();++fi)
+{
+  if( !(*fi).IsD() )
+    fi->N() = PolygonNormal(*fi).Normalize();
+}
 }
 
 ///  \brief Calculates the vertex normal as an angle weighted average. It does not need or exploit current face normals.
@@ -116,7 +118,7 @@ G. Thurmer, C. A. Wuthrich
 "Computing vertex normals from polygonal facets"
 Journal of Graphics Tools, 1998
  */
-static void PerVertexAngleWeighted(ComputeMeshType &m)
+ static void PerVertexAngleWeighted(ComputeMeshType &m)
 {
   PerVertexClear(m);
   FaceIterator f;
@@ -168,7 +170,7 @@ static void PerFace(ComputeMeshType &m)
   RequirePerFaceNormal(m);
   for(FaceIterator f=m.face.begin();f!=m.face.end();++f)
     if( !(*f).IsD() )
-              f->N() = TriangleNormal(*f);
+              f->N() = TriangleNormal(*f).Normalize();
 }
 
 

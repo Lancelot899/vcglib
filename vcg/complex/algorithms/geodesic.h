@@ -176,14 +176,13 @@ public:
 
 
   struct DIJKDist{
-	DIJKDist(VertexPointer _v):v(_v), q(_v->Q()){}
+    DIJKDist(VertexPointer _v):v(_v){}
     VertexPointer v;
-	ScalarType q;
 
     bool operator < (const DIJKDist &o) const
     {
-		if( q != o.q)
-		return q > o.q;
+      if( v->Q() != o.v->Q())
+        return v->Q() > o.v->Q();
       return v<o.v;
     }
    };
@@ -515,7 +514,7 @@ It is just a simple wrapper of the basic Compute()
   static inline std::string parentsAttributeName(void) { return "parent"; }
 
   template <class DistanceFunctor>
-  static void PerFaceDijkstraCompute(MeshType &m, const std::vector<FacePointer> &seedVec,
+  static void PerFaceDijsktraCompute(MeshType &m, const std::vector<FacePointer> &seedVec,
                                      DistanceFunctor &distFunc,
                                      ScalarType maxDistanceThr  = std::numeric_limits<ScalarType>::max(),
                                      std::vector<FacePointer> *InInterval=NULL,
@@ -580,7 +579,7 @@ It is just a simple wrapper of the basic Compute()
 
 
   template <class DistanceFunctor>
-  static void PerVertexDijkstraCompute(MeshType &m, const std::vector<VertexPointer> &seedVec,
+  static void PerVertexDijsktraCompute(MeshType &m, const std::vector<VertexPointer> &seedVec,
                                        DistanceFunctor &distFunc,
                                      ScalarType maxDistanceThr  = std::numeric_limits<ScalarType>::max(),
                                      std::vector<VertexPointer> *InInterval=NULL,
@@ -601,7 +600,6 @@ It is just a simple wrapper of the basic Compute()
 
     std::vector<DIJKDist> Heap;
     tri::UnMarkAll(m);
-	tri::UnMarkAll(m);
 
     for(size_t i=0;i<seedVec.size();++i)
     {

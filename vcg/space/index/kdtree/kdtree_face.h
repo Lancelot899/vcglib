@@ -57,23 +57,18 @@ namespace vcg {
 
   public:
 
-    KdTreeFace():epsilon(std::numeric_limits<Scalar>::epsilon())
-    {
-      targetCellSize = 64;
-      targetMaxDepth = 64;
-    };
-
-    KdTreeFace(unsigned int maxObjPerCell, unsigned int maxDepth) : epsilon(std::numeric_limits<Scalar>::epsilon())
+    KdTreeFace(MeshType& mesh, unsigned int maxObjPerCell = 64, unsigned int maxDepth = 64) : epsilon(std::numeric_limits<Scalar>::epsilon())
     {
       targetCellSize = maxObjPerCell;
       targetMaxDepth = maxDepth;
-    };
-
-    KdTreeFace(MeshType& mesh, unsigned int maxObjPerCell = 64, unsigned int maxDepth = 64, bool onlySelection = false) : epsilon(std::numeric_limits<Scalar>::epsilon())
-    {
-      targetCellSize = maxObjPerCell;
-      targetMaxDepth = maxDepth;
-      Set(mesh.face.begin(), mesh.face.end(), mesh.face.size(), onlySelection);
+      mNodes.resize(1);
+      Node& node = mNodes.back();
+      node.leaf = 0;
+      node.aabb = mesh.bbox;
+      node.aabb.Offset(VectorType(epsilon, epsilon, epsilon));
+      for (int i = 0; i < mesh.face.size(); i++)
+        node.list.push_back(&mesh.face[i]);
+      numLevel = createTree(0, 1);
     };
 
     ~KdTreeFace()
@@ -81,53 +76,10 @@ namespace vcg {
 
     };
 
-    template <class ObjIter>
-    void Set(const ObjIter & _oBegin, const ObjIter & _oEnd, int size = 0,  bool onlySelection = false)
-    {
-      mNodes.resize(1);
-      Node& node = mNodes.back();
-      node.leaf = 0;
-      node.aabb.Offset(VectorType(epsilon, epsilon, epsilon));
-      Box3<Scalar> box;
-      if (onlySelection)
-      {
-        for (ObjIter i = _oBegin; i != _oEnd; ++i)
-        {
-          if ((*i).IsS())
-          {
-            node.list.push_back(&(*i));
-            box.Add((*i).P(0));
-            box.Add((*i).P(1));
-            box.Add((*i).P(2));
-          }
-        }
-      }
-      else
-      {
-        for (ObjIter i = _oBegin; i != _oEnd; ++i)
-        {
-          node.list.push_back(&(*i));
-          box.Add((*i).P(0));
-          box.Add((*i).P(1));
-          box.Add((*i).P(2));
-        }
-      }
-      node.aabb = box;
-      numLevel = CreateTree(0, 1);
-    };
 
-    void Clear()
+    template <class ObjectMarker> FacePointer doQueryClosest(const VectorType& queryPoint, VectorType& narestPoint, Scalar& dist, ObjectMarker& marker, Scalar maxDist = std::numeric_limits<Scalar>::max())
     {
-      for (int i = 0; i < mNodes.size(); i++)
-        mNodes[i].list.clear();
-      mNodes.clear();
-    };
-
-    //template <class ObjectMarker> FacePointer GetClosest(const VectorType& queryPoint, VectorType& narestPoint, Scalar& dist, ObjectMarker& marker, Scalar maxDist = std::numeric_limits<Scalar>::max())
-    template <class ObjPointDistFunction, class ObjectMarker>
-    FacePointer GetClosest(ObjPointDistFunction& pDistFunc, ObjectMarker& marker, const VectorType& queryPoint, Scalar maxDist, Scalar& dist, VectorType& narestPoint)
-    {
-      if (mNodes.size() == 0|| (maxDist < std::numeric_limits<Scalar>::max() && !mNodes[0].aabb.IsIn(queryPoint) && vcg::PointFilledBoxDistance(queryPoint, mNodes[0].aabb) >= maxDist))
+      if (maxDist < std::numeric_limits<Scalar>::max() && !mNodes[0].aabb.IsIn(queryPoint) && vcg::PointFilledBoxDistance(queryPoint, mNodes[0].aabb) >= maxDist)
       {
         dist = maxDist;
         return NULL;
@@ -157,7 +109,7 @@ namespace vcg {
                 marker.Mark(node.list[i]);
                 Scalar tempDist = minDist;
                 VectorType tempP;
-                if (pDistFunc(*node.list[i], queryPoint, tempDist, tempP))
+                if (vcg::face::PointDistanceBase(*node.list[i], queryPoint, tempDist, tempP))
                 {
                   if (tempDist < minDist)
                   {
@@ -224,7 +176,7 @@ namespace vcg {
     };
 
 
-    int CreateTree(unsigned int nodeId, unsigned int level)
+    int createTree(unsigned int nodeId, unsigned int level)
     {
       Node& node = mNodes[nodeId];
       VectorType diag = node.aabb.max - node.aabb.min;
@@ -312,7 +264,7 @@ namespace vcg {
         else
         {
           leftChild.leaf = 0;
-          leftLevel = CreateTree(firstChildId, level + 1);
+          leftLevel = createTree(firstChildId, level + 1);
         }
       }
 
@@ -326,7 +278,7 @@ namespace vcg {
         else
         {
           rightChild.leaf = 0;
-          rightLevel = CreateTree(firstChildId + 1, level + 1);
+          rightLevel = createTree(firstChildId + 1, level + 1);
         }
       }
       if (leftLevel > rightLevel)

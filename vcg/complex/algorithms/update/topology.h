@@ -23,6 +23,11 @@
 
 #ifndef __VCG_TRI_UPDATE_TOPOLOGY
 #define __VCG_TRI_UPDATE_TOPOLOGY
+#include <algorithm>
+#include <vector>
+#include <vcg/simplex/face/pos.h>
+#include <vcg/simplex/face/topology.h>
+#include <vcg/simplex/edge/topology.h>
 
 namespace vcg {
 namespace tri {
@@ -48,97 +53,15 @@ typedef typename MeshType::EdgeIterator   EdgeIterator;
 typedef typename MeshType::FaceType       FaceType;
 typedef typename MeshType::FacePointer    FacePointer;
 typedef typename MeshType::FaceIterator   FaceIterator;
-typedef typename MeshType::TetraType      TetraType;
-typedef typename MeshType::TetraPointer   TetraPointer;
-typedef typename MeshType::TetraIterator  TetraIterator;
 
 
 /// \headerfile topology.h vcg/complex/algorithms/update/topology.h
-
-/// \brief Auxiliary data structure for computing tetra tetra adjacency information.
-/**
- * It identifies a face, storing three vertex pointers and a tetra pointer where it belongs.
- */
-
-class PFace
-{
-public:
-  VertexPointer v[3];  //three ordered vertex pointers, identify a face
-  TetraPointer  t;     //the pointer to the tetra where this face belongs
-  int           z;     //index in [0..3] of the face in the tetra
-  bool   isBorder;
-
-  PFace () {}
-  PFace (TetraPointer tp, const int nz) { this->Set(tp, nz); }
-
-  void Set (TetraPointer tp /*the tetra pointer*/, const int nz /*the face index*/) 
-  {
-    assert (tp != 0);
-    assert (nz >= 0 && nz < 4);
-    
-    v[0] = tp->cV(Tetra::VofF(nz, 0));
-    v[1] = tp->cV(Tetra::VofF(nz, 1));
-    v[2] = tp->cV(Tetra::VofF(nz, 2));
-    
-    assert(v[0] != v[1] && v[1] != v[2]); //no degenerate faces
-
-    if (v[0] > v[1])
-      std::swap(v[0], v[1]);
-    if (v[1] > v[2])
-      std::swap(v[1], v[2]);
-    if (v[0] > v[1])
-      std::swap(v[0], v[1]);
-
-    t = tp;
-    z = nz;
-    
-
-  }
-
-  inline bool operator < (const PFace & pf) const 
-  {
-    if (v[0] < pf.v[0]) 
-      return true;
-    else
-    { 
-      if (v[0] > pf.v[0]) return false;
-
-      if (v[1] < pf.v[1])
-        return true;
-      else
-      {
-        if (v[1] > pf.v[1]) return false;
-
-        return (v[2] < pf.v[2]);
-      }
-    }
-  }
-
-  inline bool operator == (const PFace & pf) const
-  {
-    return v[0] == pf.v[0] && v[1] == pf.v[1] && v[2] == pf.v[2];
-  }
-};
-
-static void FillFaceVector (MeshType & m, std::vector<PFace> & fvec)
-{
-  ForEachTetra(m, [&fvec] (TetraType & t) {
-    for (int i = 0; i < 4; ++i)
-      fvec.push_back(PFace(&t, i));
-  });
-}
-
-static void FillUniqueFaceVector (MeshType & m, std::vector<PFace> & fvec)
-{
-  FillFaceVector(m, fvec);
-  std::sort(fvec.begin(), fvec.end());
-  typename std::vector<PFace>::iterator newEnd = std::unique(fvec.begin(), fvec.end());
-}
 
 /// \brief Auxiliairy data structure for computing face face adjacency information.
 /**
 It identifies and edge storing two vertex pointer and a face pointer where it belong.
 */
+
 class PEdge
 {
 public:
@@ -157,7 +80,7 @@ public:
     assert(nz<pf->VN());
 
     v[0] = pf->V(nz);
-    v[1] = pf->V(pf->Next(nz));
+    v[1] = pf->V(pf->Next(nz)); // pf->Next得到的是下一个指标的点
     assert(v[0] != v[1]); // The face pointed by 'f' is Degenerate (two coincident vertexes)
 
     if( v[0] > v[1] ) std::swap(v[0],v[1]);
@@ -190,15 +113,17 @@ public:
 /// Fill a vector with all the edges of the mesh.
 /// each edge is stored in the vector the number of times that it appears in the mesh, with the referring face.
 /// optionally it can skip the faux edges (to retrieve only the real edges of a triangulated polygonal mesh)
-
-static void FillEdgeVector(MeshType &m, std::vector<PEdge> &edgeVec, bool includeFauxEdge=true)
-{
+static void FillEdgeVector(MeshType &m, std::vector<PEdge> &edgeVec, bool includeFauxEdge=true) {
   edgeVec.reserve(m.fn*3);
-  for(FaceIterator fi=m.face.begin();fi!=m.face.end();++fi)
-    if( ! (*fi).IsD() )
-      for(int j=0;j<(*fi).VN();++j)
-        if(includeFauxEdge || !(*fi).IsF(j))
-          edgeVec.push_back(PEdge(&*fi,j));
+  for (FaceIterator fi = m.face.begin(); fi != m.face.end(); ++fi) {
+      if (!(*fi).IsD()) {
+          for (int j = 0; j < (*fi).VN(); ++j) {
+              if (includeFauxEdge || !(*fi).IsF(j)) {
+                  edgeVec.push_back(PEdge(&*fi, j));
+              }
+          }
+      }
+  }
 }
 
 static void FillUniqueEdgeVector(MeshType &m, std::vector<PEdge> &edgeVec, bool includeFauxEdge=true, bool computeBorderFlag=false)
@@ -211,7 +136,7 @@ static void FillUniqueEdgeVector(MeshType &m, std::vector<PEdge> &edgeVec, bool 
             edgeVec[ i ].isBorder = true;
         for (size_t i=1; i<edgeVec.size(); i++) {
             if (edgeVec[i]==edgeVec[i-1])
-                edgeVec[i].isBorder = edgeVec[i-1].isBorder = false;
+                edgeVec[i-1].isBorder = edgeVec[i-1].isBorder = false;
         }
     }
 
@@ -219,20 +144,6 @@ static void FillUniqueEdgeVector(MeshType &m, std::vector<PEdge> &edgeVec, bool 
 
     edgeVec.resize(newEnd-edgeVec.begin()); // redundant! remove?
 }
-
-static void FillSelectedFaceEdgeVector(MeshType &m, std::vector<PEdge> &edgeVec)
-{
-  edgeVec.reserve(m.fn*3);
-  ForEachFace(m, [&](FaceType &f){
-    for(int j=0;j<f.VN();++j)
-      if(f.IsFaceEdgeS(j))
-        edgeVec.push_back(PEdge(&f,j));
-        });
-
-  sort(edgeVec.begin(), edgeVec.end()); // oredering by vertex
-  edgeVec.erase(std::unique(edgeVec.begin(), edgeVec.end()),edgeVec.end()); 
-}
-
 
 
 /*! \brief Initialize the edge vector all the edges that can be inferred from current face vector, setting up all the current adjacency relations
@@ -315,60 +226,6 @@ static void AllocateEdge(MeshType &m)
 
 }
 
-/// \brief Clear the tetra-tetra topological relation, setting each involved pointer to null.
-/// useful when you passed a mesh with tt adjacency to an algorithm that does not use it and chould have messed it
-static void ClearTetraTetra (MeshType & m)
-{
-  RequireTTAdjacency(m);
-  ForEachTetra(m, [] (TetraType & t) {
-      for (int i = 0; i < 4; ++i)
-      {
-        t.TTp(i) = NULL;
-        t.TTi(i) = -1;
-      }
-  });
-}
-
-/// \brief Updates the Tetra-Tetra topological relation by allowing to retrieve for each tetra what other tetras share their faces.
-static void TetraTetra (MeshType & m)
-{
-  RequireTTAdjacency(m);
-  if (m.tn == 0) return;
-
-  std::vector<PFace> fvec;
-  FillFaceVector(m, fvec);
-  std::sort(fvec.begin(), fvec.end());
-
-  int nf = 0;
-  typename std::vector<PFace>::iterator pback, pfront;
-  pback  = fvec.begin();
-  pfront = fvec.begin();
-
-  do 
-  {
-    if (pfront == fvec.end() || !(*pfront == *pback))
-    {
-      typename std::vector<PFace>::iterator q, q_next;
-      for (q = pback; q < pfront - 1; ++q)
-      {
-        assert((*q).z >= 0);
-        q_next = q;
-        ++q_next;
-        assert((*q_next).z >= 0 && (*q_next).z < 4);
-        
-        (*q).t->TTp(q->z) = (*q_next).t;
-        (*q).t->TTi(q->z) = (*q_next).z;
-      }
-      
-      (*q).t->TTp(q->z) = pback->t;
-      (*q).t->TTi(q->z) = pback->z;
-      pback = pfront;
-      ++nf;
-    }
-    if (pfront == fvec.end()) break;
-    ++pfront;
-  } while (true);
-}
 /// \brief Clear the Face-Face topological relation setting each involved pointer to null.
 /// useful when you passed a mesh with ff adjacency to an algorithm that does not use it and could have messed it.
 static void ClearFaceFace(MeshType &m)
@@ -394,7 +251,7 @@ static void FaceFace(MeshType &m)
   if( m.fn == 0 ) return;
 
   std::vector<PEdge> e;
-  FillEdgeVector(m,e);
+  FillEdgeVector(m,e); // 这一步会得到所有的边，每个边里面记录了face，同一个边(点相同)记录的face一定不一样
   sort(e.begin(), e.end());							// Lo ordino per vertici
 
   int ne = 0;											// Numero di edge reali
@@ -406,6 +263,7 @@ static void FaceFace(MeshType &m)
   {
     if( pe==e.end() || !(*pe == *ps) )					// Trovo blocco di edge uguali
     {
+        //这里生成vertexFace类似的链表
       typename std::vector<PEdge>::iterator q,q_next;
       for (q=ps;q<pe-1;++q)						// Scansione facce associate
       {
@@ -430,30 +288,6 @@ static void FaceFace(MeshType &m)
   } while(true);
 }
 
-
-/// \brief Update the vertex-tetra topological relation.
-static void VertexTetra(MeshType & m)
-{
-  RequireVTAdjacency(m);
-
-  
-  ForEachVertex(m, [] (VertexType & v) {
-      v.VTp() = NULL;
-      v.VTi() = 0;
-  });
-
-  ForEachTetra(m, [] (TetraType & t) {
-    //this works like this: the first iteration defines the end of the chain
-    //then it backwards chains everything
-      for (int i = 0; i < 4; ++i)
-      {
-        t.VTp(i) = t.V(i)->VTp();
-        t.VTi(i) = t.V(i)->VTi();
-        t.V(i)->VTp() = &t;
-        t.V(i)->VTi() = i;
-      }
-  });
-}
 /// \brief Update the Vertex-Face topological relation.
 /**
 The function allows to retrieve for each vertex the list of faces sharing this vertex.
@@ -472,17 +306,30 @@ static void VertexFace(MeshType &m)
     (*vi).VFi() = 0; // note that (0,-1) means uninitiazlied while 0,0 is the valid initialized values for isolated vertices.
   }
 
-  for(FaceIterator fi=m.face.begin();fi!=m.face.end();++fi)
-    if( ! (*fi).IsD() )
-    {
-      for(int j=0;j<(*fi).VN();++j)
+  for (FaceIterator fi = m.face.begin(); fi != m.face.end(); ++fi) {
+      if (!(*fi).IsD())
       {
-        (*fi).VFp(j) = (*fi).V(j)->VFp();
-        (*fi).VFi(j) = (*fi).V(j)->VFi();
-        (*fi).V(j)->VFp() = &(*fi);
-        (*fi).V(j)->VFi() = j;
+          for (int j = 0; j < (*fi).VN(); ++j)
+          {
+              (*fi).VFp(j) = (*fi).V(j)->VFp(); //首先会遍历面的所有点，然后记录点指向的面
+              (*fi).VFi(j) = (*fi).V(j)->VFi(); // 这里记录那个面的对应点是第几个点
+              (*fi).V(j)->VFp() = &(*fi); //把这个点所只想的面记录当前面，用于下一次迭代使用
+              (*fi).V(j)->VFi() = j;
+          }
       }
-    }
+  }
+
+  /// 这个过程其实是通过点存储的VFp和VFi将邻域信息记录到面的VFp和VFi中，具体流程是
+  /// __ __ __  如图所示，面从左到右为0,1,2,3,4
+  /// \/_\/_\/  点为012 213 324 435 456
+  /// 第一次迭代时候，0号面记录的点节点为xxx(x代表空指针)，然后012三个点的VFp变成了000
+  /// 第二次迭代，1号面指针变为了00x，然后213三个点的VFP变成了111
+  /// 第三次迭代，2号面指针变为了11x, 然后324三个点的VFP变成了222
+  /// 第四次迭代，3号面指针变为了22x, 然后435三个点的VFp变为333
+  /// 第五次迭代，4号面指针变为了33x，然后456三个点VFp变为444
+  /// 最后统计一下点，(0, 0) (1,1) (2,2) (3,3) (4, 4) (5, 4) (6, 4)
+  /// 现在考虑迭代2号点周围的面,首先会拿出2号点对应的面，即2号面，然后2号面记录的2号点对应的面VFp指针为1，
+  /// 这时候会迭代1号面，1号面对应的2号点对应的指针为0，这时会迭代0号面，最后0号面记录了x，终止迭代
 }
 
 
@@ -603,10 +450,13 @@ static void TestVertexEdge(MeshType &m)
       if (!vi->IsD())
       {
         int cnt =0;
+        int ind = tri::Index(m,*vi);
+        int incidentNum = numVertex[ind];
         for(edge::VEIterator<EdgeType> vei(&*vi);!vei.End();++vei)
           cnt++;
-        assert((numVertex[tri::Index(m,*vi)] == 0) == (vi->VEp()==0) );
-        assert(cnt==numVertex[tri::Index(m,*vi)]);        
+        EdgeType *vep = vi->VEp();
+        assert((incidentNum==0) == (vi->VEp()==0) );
+        assert(cnt==incidentNum);        
       }
   }  
 }

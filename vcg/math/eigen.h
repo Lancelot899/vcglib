@@ -53,10 +53,10 @@ struct ei_to_vcgtype;
 }
 
 #include "base.h"
-#include "../../eigenlib/Eigen/LU"
-#include "../../eigenlib/Eigen/Geometry"
-#include "../../eigenlib/Eigen/Array"
-#include "../../eigenlib/Eigen/Core"
+#include "../../eigen3/Eigen/LU"
+#include "../../eigen3/Eigen/Geometry"
+#include "../../eigen3/Eigen/Array"
+#include "../../eigen3/Eigen/Core"
 
 // add support for unsigned char and short int
 namespace Eigen {

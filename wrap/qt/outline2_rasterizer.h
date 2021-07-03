@@ -16,8 +16,9 @@ class QtOutline2Rasterizer
 public:
     static void rasterize(vcg::RasterizedOutline2 &poly,
                           float scaleFactor,
-                          int rast_i, int rotationNum, int gutterWidth);
+                          int rast_i, int rotationNum, int cellSize);
 
     static std::vector<std::vector<int> > rotateGridCWise(std::vector< std::vector<int> >& inGrid);
+
 };
 #endif // QTPOLYRASTERIZER_H

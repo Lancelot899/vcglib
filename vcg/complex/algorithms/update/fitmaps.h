@@ -27,16 +27,17 @@
 #include <vcg/math/histogram.h>
 
 #include <vcg/simplex/face/jumping_pos.h>
+#include <vcg/complex/algorithms/update/flag.h>
 #include <vcg/complex/algorithms/update/normal.h>
 #include <vcg/complex/algorithms/update/curvature.h>
 #include <vcg/complex/algorithms/update/topology.h>
 #include <vcg/complex/algorithms/update/bounding.h>
 #include "vcg/complex/algorithms/update/curvature_fitting.h"
 
-#include <Eigen/Core>
-#include <Eigen/QR>
-#include <Eigen/LU>
-#include <Eigen/SVD>
+#include <eigen3/Eigen/Core>
+#include <eigen3/Eigen/QR>
+#include <eigen3/Eigen/LU>
+#include <eigen3/Eigen/SVD>
 
 #include <vcg/complex/algorithms/nring.h>
 
@@ -187,10 +188,8 @@ public:
 
                 b[c] = n;
             }
-            
-            Eigen::JacobiSVD<Eigen::MatrixXd> svd(A);
-            sol=svd.solve(b);
-//            A.svd().solve(b, &sol);
+
+            A.svd().solve(b, &sol);
 
             vector<double> r(16);
 
@@ -437,10 +436,7 @@ public:
                     bm[c] = onedimensional[c];
                 }
 
-                
-                // Am.svd().solve(bm, &sol);
-                Eigen::JacobiSVD<Eigen::MatrixXd> svd(Am);
-                sol=svd.solve(bm);
+                Am.svd().solve(bm, &sol);
 
                 it->Q() = pow((double)sol[0],0.25);
 
