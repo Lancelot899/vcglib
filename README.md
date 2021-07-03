@@ -1,3 +1,11 @@
+# 在这个代码上加入了些中文注释
+原来的代码请出门右转[vcglib](https://github.com/cnr-isti-vclab/vcglib)
+
+下面是原来的Readme
+
+----------------------------------------------------------------
+
+
 The **_Visualization and Computer Graphics Library_** (VCGlib for short) is a open source, portable, C++, templated, no dependency, library for manipulation, processing, cleaning, simplifying triangle meshes.
 
 ![BuildSamplesUbuntu](https://github.com/cnr-isti-vclab/vcglib/workflows/BuildSamplesUbuntu/badge.svg)
