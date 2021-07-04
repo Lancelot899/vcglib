@@ -330,55 +330,52 @@ class RefinedFaceData
 template<class MESH_TYPE,class MIDPOINT, class EDGEPRED>
 bool RefineE(MESH_TYPE &m, MIDPOINT &mid, EDGEPRED &ep,bool RefineSelected=false, CallBackPos *cb = 0)
 {
-    // common typenames
-    typedef typename MESH_TYPE::VertexIterator VertexIterator;
-    typedef typename MESH_TYPE::FaceIterator FaceIterator;
-    typedef typename MESH_TYPE::VertexPointer VertexPointer;
-    typedef typename MESH_TYPE::FacePointer FacePointer;
-    typedef typename MESH_TYPE::FaceType FaceType;
-    typedef typename MESH_TYPE::FaceType::TexCoordType TexCoordType;
-    assert(tri::HasFFAdjacency(m));
-    tri::UpdateFlags<MESH_TYPE>::FaceBorderFromFF(m);
-    typedef face::Pos<FaceType>  PosType;
+  // common typenames
+  typedef typename MESH_TYPE::VertexIterator VertexIterator;
+  typedef typename MESH_TYPE::FaceIterator FaceIterator;
+  typedef typename MESH_TYPE::VertexPointer VertexPointer;
+  typedef typename MESH_TYPE::FacePointer FacePointer;
+  typedef typename MESH_TYPE::FaceType FaceType;
+  typedef typename MESH_TYPE::FaceType::TexCoordType TexCoordType;
+  assert(tri::HasFFAdjacency(m));
+  tri::UpdateFlags<MESH_TYPE>::FaceBorderFromFF(m);
+  typedef face::Pos<FaceType>  PosType;
 
-    int j,NewVertNum=0,NewFaceNum=0;
+  int j,NewVertNum=0,NewFaceNum=0;
 
-    typedef RefinedFaceData<VertexPointer> RFD;
-    typedef typename MESH_TYPE :: template PerFaceAttributeHandle<RFD> HandleType;
-    HandleType RD  = tri::Allocator<MESH_TYPE>:: template AddPerFaceAttribute<RFD> (m,std::string("RefineData"));
+  typedef RefinedFaceData<VertexPointer> RFD;
+  typedef typename MESH_TYPE :: template PerFaceAttributeHandle<RFD> HandleType;
+  HandleType RD  = tri::Allocator<MESH_TYPE>:: template AddPerFaceAttribute<RFD> (m,std::string("RefineData"));
 
-    // Callback stuff
-    int step=0;
-    int PercStep=std::max(1,m.fn/33);
+  // Callback stuff
+  int step=0;
+  int PercStep=std::max(1,m.fn/33);
 
-    // First Loop: We analyze the mesh to compute the number of the new faces and new vertices
-    FaceIterator fi;
-  for(fi=m.face.begin(),j=0;fi!=m.face.end();++fi) if(!(*fi).IsD())
-    {
-        if(cb && (++step%PercStep)==0) (*cb)(step/PercStep,"Refining...");
-        // skip unselected faces if necessary
-        if(RefineSelected && !(*fi).IsS()) continue;
+  // First Loop: We analyze the mesh to compute the number of the new faces and new vertices
+  FaceIterator fi;
+  for(fi=m.face.begin(),j=0;fi!=m.face.end();++fi) if(!(*fi).IsD()) {
+    if(cb && (++step%PercStep)==0) (*cb)(step/PercStep,"Refining...");
+    // skip unselected faces if necessary
+    if(RefineSelected && !(*fi).IsS()) continue;
 
-        for(j=0;j<3;j++)
-            {
-                if(RD[fi].ep[j]) continue;
+    for(j=0;j<3;j++) {
+      if(RD[fi].ep[j]) continue;
 
-                PosType edgeCur(&*fi,j);
-                if(RefineSelected && ! edgeCur.FFlip()->IsS()) continue;
-                if(!ep(edgeCur)) continue;
+      PosType edgeCur(&*fi,j);
+      if(RefineSelected && ! edgeCur.FFlip()->IsS()) continue;
+      if(!ep(edgeCur)) continue;
 
-                RD[edgeCur.F()].ep[edgeCur.E()]=true;
-                ++NewFaceNum;
-                ++NewVertNum;
-                assert(edgeCur.IsManifold());
-                if(!edgeCur.IsBorder())
-                {
-                    edgeCur.FlipF();
-                    edgeCur.F()->SetV();
-                    RD[edgeCur.F()].ep[edgeCur.E()]=true;
-                    ++NewFaceNum;
-                }
-            }
+      RD[edgeCur.F()].ep[edgeCur.E()]=true;
+      ++NewFaceNum;
+      ++NewVertNum;
+      assert(edgeCur.IsManifold());
+      if(!edgeCur.IsBorder()) {
+          edgeCur.FlipF();
+          edgeCur.F()->SetV();
+          RD[edgeCur.F()].ep[edgeCur.E()]=true;
+          ++NewFaceNum;
+      }
+    }
 
   } // end face loop
 

@@ -38,16 +38,16 @@ template <class MeshType>
 inline void ForEachFacePos(MeshType &m, std::function<void (typename face::Pos<typename MeshType::FaceType>  &)> action)
 {
   typedef typename face::Pos<typename MeshType::FaceType> PosType;
-  
-    for(auto fi=m.face.begin();fi!=m.face.end();++fi)
-        if(!(*fi).IsD())
-        {
-            for(int i=0;i<3;++i)
-            {
-                PosType pi(&*fi,i);
-                action(pi);
-            }
-        }
+  for(auto fi=m.face.begin();fi!=m.face.end();++fi) {
+      if(!(*fi).IsD())
+      {
+          for(int i=0;i<3;++i)
+          {
+              PosType pi(&*fi,i);
+              action(pi);
+          }
+      }
+  }
 }
 
 /**

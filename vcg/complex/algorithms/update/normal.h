@@ -92,8 +92,10 @@ static void PerVertex(ComputeMeshType &m)
  for(FaceIterator f=m.face.begin();f!=m.face.end();++f)
    if( !(*f).IsD() && (*f).IsR() )
    {
+     /// 计算了面的法向量乘以面积的2倍
     typename FaceType::NormalType t = vcg::TriangleNormal(*f);
 
+    /// 通过面遍历点，把面的法向量加到点上
     for(int j=0; j<(*f).VN(); ++j)
      if( !(*f).V(j)->IsD() && (*f).V(j)->IsRW() )
       (*f).V(j)->N() += t;
@@ -168,11 +170,9 @@ static void PerVertexNelsonMaxWeighted(ComputeMeshType &m)
 static void PerFace(ComputeMeshType &m)
 {
   RequirePerFaceNormal(m);
-  for(FaceIterator f=m.face.begin();f!=m.face.end();++f) {
-    if( !(*f).IsD() ) {
-      f->N() = TriangleNormal(*f).Normalize();
-    }
-  }
+  for(FaceIterator f=m.face.begin();f!=m.face.end();++f)
+    if( !(*f).IsD() )
+              f->N() = TriangleNormal(*f).Normalize();
 }
 
 
@@ -287,7 +287,10 @@ static void PerPolygonalFaceNormalized(ComputeMeshType &m) {
 /// \brief Equivalent to PerVertex() and PerFace().
 static void PerVertexPerFace(ComputeMeshType &m)
 {
+  /// 计算每个面的法向量
  PerFace(m);
+
+ /// 计算点的法向量(没有归一化)
  PerVertex(m);
 }
 
@@ -295,6 +298,8 @@ static void PerVertexPerFace(ComputeMeshType &m)
 static void PerVertexNormalizedPerFace(ComputeMeshType &m)
 {
     PerVertexPerFace(m);
+
+    /// 将点的法向量归一化
     NormalizePerVertex(m);
 }
 
@@ -323,30 +328,25 @@ static void PerBitQuadFaceNormalized(ComputeMeshType &m)
 /// \brief Exploit bitquads to compute a per-polygon face normal
 static void PerBitPolygonFaceNormalized(ComputeMeshType &m)
 {
-  /// 计算每个面的法向量
   PerFace(m);
-
   tri::RequireCompactness(m);
   tri::RequireTriangularMesh(m);
   tri::UpdateFlags<ComputeMeshType>::FaceClearV(m);
   std::vector<VertexPointer> vertVec;
   std::vector<FacePointer> faceVec;
-  
-  for(size_t i=0;i<m.face.size();++i) {
-    if(!m.face[i].IsV()) {
+  for(size_t i=0;i<m.face.size();++i)
+    if(!m.face[i].IsV())
+    {
       tri::PolygonSupport<MeshType,MeshType>::ExtractPolygon(&(m.face[i]),vertVec,faceVec);
       CoordType nf(0,0,0);
-      for(size_t j=0;j<faceVec.size();++j) {
+      for(size_t j=0;j<faceVec.size();++j)
         nf+=faceVec[j]->N().Normalize() * DoubleArea(*faceVec[j]);
-      }
 
       nf.Normalize();
 
-      for(size_t j=0;j<faceVec.size();++j) {
+      for(size_t j=0;j<faceVec.size();++j)
         faceVec[j]->N()=nf;
-      }
     }
-  }
 }
 /// \brief Multiply the vertex normals by the matrix passed. By default, the scale component is removed.
 static void PerVertexMatrix(ComputeMeshType &m, const Matrix44<ScalarType> &mat, bool remove_scaling= true)

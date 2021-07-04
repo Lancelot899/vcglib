@@ -765,19 +765,18 @@ void VFAppend(FaceType* & f, int z)
 template <class FaceType>
 void VVStarVF( typename FaceType::VertexType* vp, std::vector<typename FaceType::VertexType *> &starVec)
 {
-    typedef typename FaceType::VertexType* VertexPointer;
-    starVec.clear();
-    face::VFIterator<FaceType> vfi(vp);
-    while(!vfi.End())
-            {
-                starVec.push_back(vfi.F()->V1(vfi.I()));
-                starVec.push_back(vfi.F()->V2(vfi.I()));
-                ++vfi;
-            }
+  typedef typename FaceType::VertexType* VertexPointer;
+  starVec.clear();
+  face::VFIterator<FaceType> vfi(vp);
+  while(!vfi.End()) {
+      starVec.push_back(vfi.F()->V1(vfi.I()));
+      starVec.push_back(vfi.F()->V2(vfi.I()));
+      ++vfi;
+  }
 
-    std::sort(starVec.begin(),starVec.end());
-    typename std::vector<VertexPointer>::iterator new_end = std::unique(starVec.begin(),starVec.end());
-    starVec.resize(new_end-starVec.begin());
+  std::sort(starVec.begin(),starVec.end());
+  typename std::vector<VertexPointer>::iterator new_end = std::unique(starVec.begin(),starVec.end());
+  starVec.resize(new_end-starVec.begin());
 }
 
 /*!
@@ -791,30 +790,27 @@ void VVStarVF( typename FaceType::VertexType* vp, std::vector<typename FaceType:
 template <class FaceType>
 void VVExtendedStarVF(typename FaceType::VertexType* vp,
                       const int num_step,
-                      std::vector<typename FaceType::VertexType *> &vertVec)
-    {
-        typedef typename FaceType::VertexType VertexType;
-        ///initialize front
-        vertVec.clear();
-        vcg::face::VVStarVF<FaceType>(vp,vertVec);
-        ///then dilate front
-        ///for each step
-        for (int step=0;step<num_step-1;step++)
-        {
-            std::vector<VertexType *> toAdd;
-            for (unsigned int i=0;i<vertVec.size();i++)
-            {
-                std::vector<VertexType *> Vtemp;
-                vcg::face::VVStarVF<FaceType>(vertVec[i],Vtemp);
-                toAdd.insert(toAdd.end(),Vtemp.begin(),Vtemp.end());
-            }
-            vertVec.insert(vertVec.end(),toAdd.begin(),toAdd.end());
-            std::sort(vertVec.begin(),vertVec.end());
-            typename std::vector<typename FaceType::VertexType *>::iterator new_end=std::unique(vertVec.begin(),vertVec.end());
-            int dist=distance(vertVec.begin(),new_end);
-            vertVec.resize(dist);
-        }
+                      std::vector<typename FaceType::VertexType *> &vertVec) {
+  typedef typename FaceType::VertexType VertexType;
+  ///initialize front
+  vertVec.clear();
+  vcg::face::VVStarVF<FaceType>(vp,vertVec);
+  ///then dilate front
+  ///for each step
+  for (int step=0;step<num_step-1;step++) {
+    std::vector<VertexType *> toAdd;
+    for (unsigned int i=0;i<vertVec.size();i++)   {
+      std::vector<VertexType *> Vtemp;
+      vcg::face::VVStarVF<FaceType>(vertVec[i],Vtemp);
+      toAdd.insert(toAdd.end(),Vtemp.begin(),Vtemp.end());
     }
+    vertVec.insert(vertVec.end(),toAdd.begin(),toAdd.end());
+    std::sort(vertVec.begin(),vertVec.end());
+    typename std::vector<typename FaceType::VertexType *>::iterator new_end=std::unique(vertVec.begin(),vertVec.end());
+    int dist=distance(vertVec.begin(),new_end);
+    vertVec.resize(dist);
+  }
+}
 
 /*!
 * \brief Compute the set of faces adjacent to a given vertex using VF adjacency.
@@ -826,17 +822,17 @@ void VVExtendedStarVF(typename FaceType::VertexType* vp,
 template <class FaceType>
 void VFStarVF( typename FaceType::VertexType* vp,
                std::vector<FaceType *> &faceVec,
-               std::vector<int> &indexes)
-{
-    faceVec.clear();
-    indexes.clear();
-    face::VFIterator<FaceType> vfi(vp);
-    while(!vfi.End())
-    {
-        faceVec.push_back(vfi.F());
-        indexes.push_back(vfi.I());
-        ++vfi;
-    }
+               std::vector<int> &indexes) {
+  faceVec.clear();
+  indexes.clear();
+
+  /// 这个迭代器用于迭代点周围的面
+  face::VFIterator<FaceType> vfi(vp);
+  while(!vfi.End()) {
+    faceVec.push_back(vfi.F()); /// 记录点周围的面
+    indexes.push_back(vfi.I()); /// 记录这个面索引的点是第几号
+    ++vfi;
+  }
 }
 
 
@@ -917,34 +913,33 @@ void EFStarFF( FaceType* fp, int ei,
 template <class FaceType>
 void VFExtendedStarVF(typename FaceType::VertexType* vp,
                              const int num_step,
-                             std::vector<FaceType*> &faceVec)
-    {
-        ///initialize front
-        faceVec.clear();
-        std::vector<int> indexes;
-        vcg::face::VFStarVF<FaceType>(vp,faceVec,indexes);
-        ///then dilate front
-        ///for each step
-        for (int step=0;step<num_step;step++)
-        {
-            std::vector<FaceType*> toAdd;
-            for (unsigned int i=0;i<faceVec.size();i++)
-            {
-                FaceType *f=faceVec[i];
-                for (int k=0;k<3;k++)
-                {
-                    FaceType *f1=f->FFp(k);
-                    if (f1==f)continue;
-                    toAdd.push_back(f1);
-                }
-            }
-            faceVec.insert(faceVec.end(),toAdd.begin(),toAdd.end());
-            std::sort(faceVec.begin(),faceVec.end());
-            typename std::vector<FaceType*>::iterator new_end=std::unique(faceVec.begin(),faceVec.end());
-            int dist=distance(faceVec.begin(),new_end);
-            faceVec.resize(dist);
-        }
+                             std::vector<FaceType*> &faceVec) {
+  ///initialize front
+  faceVec.clear();
+  std::vector<int> indexes;
+
+  /// 得到点周围的面，并获取到面引用的点的索引
+  vcg::face::VFStarVF<FaceType>(vp,faceVec,indexes);
+  /// then dilate front
+  /// for each step
+  /// 往下迭代，不断往下得到更多的面one ring的one ring
+  for (int step = 0; step < num_step; step++) {
+    std::vector<FaceType*> toAdd;
+    for (unsigned int i = 0; i < faceVec.size(); i++) {
+      FaceType *f = faceVec[i];
+      for (int k = 0; k < 3; k++) {
+          FaceType *f1=f->FFp(k);
+          if (f1==f)continue;
+          toAdd.push_back(f1);
+      }
     }
+    faceVec.insert(faceVec.end(),toAdd.begin(),toAdd.end());
+    std::sort(faceVec.begin(),faceVec.end());
+    typename std::vector<FaceType*>::iterator new_end=std::unique(faceVec.begin(),faceVec.end());
+    int dist = distance(faceVec.begin(),new_end);
+    faceVec.resize(dist);
+  }
+}
 
 /*!
  * \brief Compute the ordered set of vertices adjacent to a given vertex using FF adiacency
