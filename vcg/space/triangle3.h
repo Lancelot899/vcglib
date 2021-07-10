@@ -203,10 +203,11 @@ P3ScalarType QualityRadii(Point3<P3ScalarType> const &p0,
     P3ScalarType c=(p1-p2).Norm();
 
     P3ScalarType sum = (a + b + c)*0.5;
-    P3ScalarType area2 =  sum*(a+b-sum)*(a+c-sum)*(b+c-sum);
+    P3ScalarType area2 =  sum*(a+b-sum)*(a+c-sum)*(b+c-sum); /// 海伦公式
     if(area2 <= 0) return 0;
     //circumradius: (a*b*c)/(4*sqrt(area2))
     //inradius: (a*b*c)/(4*circumradius*sum) => sqrt(area2)/sum;
+    ///  内切圆直径 / 外接圆半径 用于判断三角形有多扁，越扁值越小
     return (8*area2)/(a*b*c*sum);
 }
 

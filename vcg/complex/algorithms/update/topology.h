@@ -253,7 +253,22 @@ static void FaceFace(MeshType &m)
   std::vector<PEdge> e;
   FillEdgeVector(m,e); // 这一步会得到所有的边，每个边里面记录了face，同一个边(点相同)记录的face一定不一样
   sort(e.begin(), e.end());							// Lo ordino per vertici
-
+  ///   /_\ 
+  /// /_\/_\
+  /// 三角形： f2
+  ///      f3 f0 f1
+  /// f0(513)  f1(312) f2(453) f3(501)
+  /// 获得的PEdge: e(f3, 0, 1, 1) e(f3, 0, 5, 0) e(f3, 1, 2, 1) e(f0, 1, 3, 1) e(f3, 1, 3, 0) e(f0, 1,5, 0)
+  ///             e(f3, 1, 5, 2) e(f1, 2, 3, 2) e(f2, 3, 4, 2) e(f0, 3, 5, 2) e(f2, 3, 5, 1) e(f2, 4, 5, 0)
+  /// 第一次循环，会操作e(f3, 0, 1, 1)，由于没有和它相同的pE，因此设置f3.FFp(1) = f3
+  /// 第二次循环，会操作e(f3, 0, 5, 0)，由于没有和它相同的pE，因此设置f3.FFp(0) = f3
+  /// 第三次循环，会操作e(f0, 1, 3, 1)，由于没有和它和e(f3, 1, 3, 0)相同，因此设置f0.FFp(1) = f3, f3.FFp(0) = f0
+  /// 最终会得到表格
+  /// f0: f3, f1, f2
+  /// f1: f0, f1, f1
+  /// f2: f2. f0, f2
+  /// f3: f3, f3, f0
+  /// 正好如果有共边的，就设置为对面的面id，没有共边的就设置为自己的面id
   int ne = 0;											// Numero di edge reali
 
   typename std::vector<PEdge>::iterator pe,ps;

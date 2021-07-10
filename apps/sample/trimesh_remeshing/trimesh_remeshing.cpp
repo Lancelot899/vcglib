@@ -74,14 +74,20 @@ int main( int argc, char **argv )
 
 
 	// Mesh cleaning
+	/// 删除没有被引用的点
 	tri::Clean<MyMesh>::RemoveUnreferencedVertex(original);
+
+	/// 将被删除的元素内存释放掉
 	Allocator<MyMesh>::CompactEveryVector(original);
 
-
+	/// 计算面的法向量和点的放向量
 	tri::UpdateNormal<MyMesh>::PerVertexNormalizedPerFaceNormalized(original);
+
+	/// 计算mesh的包围盒
 	tri::UpdateBounding<MyMesh>::Box(original);
 
 	vcg::tri::Append<MyMesh,MyMesh>::MeshCopy(toremesh,original);
+
 	tri::UpdateNormal<MyMesh>::PerVertexNormalizedPerFaceNormalized(toremesh);
 	tri::UpdateBounding<MyMesh>::Box(toremesh);
 

@@ -182,6 +182,7 @@ class TriMesh
         typedef typename TriMesh::HEdgeContainer				HEdgeContainer;
         typedef typename TriMesh::ConstHEdgeIterator		ConstHEdgeIterator;
 
+        /// 这里是一个可以用于给mesh添加额外属性的设置
         typedef vcg::PointerToAttribute PointerToAttribute;
 
     typedef TriMesh<Container0, Container1,Container2,Container3> MeshType;
@@ -235,6 +236,7 @@ class TriMesh
 
 
 
+    /// 这个类记录了属性句柄,用于将数据类型和属性关联SimpleTempData可以用过类型指针访问到对应属性
     template <class ATTR_TYPE, class CONT>
     class AttributeHandle{
     public:
@@ -258,6 +260,7 @@ class TriMesh
         void resize(size_t /*size*/) { };
     };
 
+    /// 这个偏特化将vertex关联了属性
     template <class ATTR_TYPE>
     class PerVertexAttributeHandle: public AttributeHandle<ATTR_TYPE,VertContainer>{
     public:
@@ -265,7 +268,7 @@ class TriMesh
                 PerVertexAttributeHandle( void *ah,const int & n):AttributeHandle<ATTR_TYPE,VertContainer>(ah,n){}
     };
 
-
+    /// 这个偏特化将face关联了属性
     template <class ATTR_TYPE>
     class PerFaceAttributeHandle: public AttributeHandle<ATTR_TYPE,FaceContainer>{
     public:

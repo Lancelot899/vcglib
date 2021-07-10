@@ -338,56 +338,54 @@ static void VertexSaturate(MeshType &m, ScalarType gradientThr=1.0)
 
   st.push(&*m.vert.begin());
 
-  while(!st.empty())
+  while(!st.empty()) {
+    VertexPointer vc = st.top();  // the center
+    //printf("Stack size %i\n",st.size());
+    //printf("Pop elem %i %f\n",st.top() - &*m.vert.begin(), st.top()->Q());
+    st.pop();
+    vc->SetV();
+    std::vector<VertexPointer> star;
+    typename std::vector<VertexPointer>::iterator vvi;
+    /// 得到v的one ring
+    face::VVStarVF<FaceType>(vc,star);
+    for(vvi=star.begin();vvi!=star.end();++vvi )
     {
-     VertexPointer vc = st.top();  // the center
-     //printf("Stack size %i\n",st.size());
-     //printf("Pop elem %i %f\n",st.top() - &*m.vert.begin(), st.top()->Q());
-     st.pop();
-     vc->SetV();
-     std::vector<VertexPointer> star;
-     typename std::vector<VertexPointer>::iterator vvi;
-     face::VVStarVF<FaceType>(vc,star);
-     for(vvi=star.begin();vvi!=star.end();++vvi )
-     {
-       ScalarType &qi = (*vvi)->Q();
-       ScalarType distGeom = Distance((*vvi)->cP(),vc->cP()) / gradientThr;
-       // Main test if the quality varies more than the geometric displacement we have to lower something.
-       if( distGeom < fabs(qi - vc->Q()))
-       {
-         // center = 0  other=10 -> other =
-         // center = 10 other=0
-         if(vc->Q() > qi)  // first case: the center of the star has to be lowered (and re-inserted in the queue).
-         {
-           //printf("Reinserting center %i \n",vc - &*m.vert.begin());
-           vc->Q() = qi+distGeom-(ScalarType)0.00001;
-           assert( distGeom > fabs(qi - vc->Q()));
-           st.push(vc);
-           break;
-         }
-         else
-         {
-           // second case: you have to lower qi, the vertex under examination.
-           assert( distGeom < fabs(qi - vc->Q()));
-           assert(vc->Q() < qi);
-           float newQi = vc->Q() + distGeom -(ScalarType)0.00001;
-           assert(newQi <= qi);
-           assert(vc->Q() < newQi);
-           assert( distGeom > fabs(newQi - vc->Q()) );
+      ScalarType &qi = (*vvi)->Q();
+      ScalarType distGeom = Distance((*vvi)->cP(),vc->cP()) / gradientThr;
+      // Main test if the quality varies more than the geometric displacement we have to lower something.
+      if( distGeom < fabs(qi - vc->Q()))
+      {
+        // center = 0  other=10 -> other =
+        // center = 10 other=0
+        if(vc->Q() > qi)  // first case: the center of the star has to be lowered (and re-inserted in the queue).
+        {
+          //printf("Reinserting center %i \n",vc - &*m.vert.begin());
+          vc->Q() = qi+distGeom-(ScalarType)0.00001;
+          assert( distGeom > fabs(qi - vc->Q()));
+          st.push(vc);
+          break;
+        } else {
+          // second case: you have to lower qi, the vertex under examination.
+          assert( distGeom < fabs(qi - vc->Q()));
+          assert(vc->Q() < qi);
+          float newQi = vc->Q() + distGeom -(ScalarType)0.00001;
+          assert(newQi <= qi);
+          assert(vc->Q() < newQi);
+          assert( distGeom > fabs(newQi - vc->Q()) );
 //             printf("distGeom %f, qi %f, vc->Q() %f, fabs(qi - vc->Q()) %f\n",distGeom,qi,vc->Q(),fabs(qi - vc->Q()));
-           qi = newQi;
-           (*vvi)->ClearV();
-         }
-       }
-       if(!(*vvi)->IsV())
-       {
-         st.push( *vvi);
+          qi = newQi;
+          (*vvi)->ClearV();
+        }
+      }
+      if(!(*vvi)->IsV())
+      {
+        st.push( *vvi);
 //         printf("Reinserting side %i \n",*vvi - &*m.vert.begin());
-         (*vvi)->SetV();
-       }
-     }
+        (*vvi)->SetV();
+      }
     }
   }
+}
 
 
 }; //end class

@@ -36,19 +36,19 @@
 
 namespace vcg {
 
-    /** BasicGrid
+/** BasicGrid
 
-    Basic Class abstracting a gridded structure in a 3d space;
-    Usueful for having coherent float to integer conversion in a unique place:
-    Some Notes:
-        - bbox is the real occupation of the box in the space;
-        - siz is the number of cells for each side
+Basic Class abstracting a gridded structure in a 3d space;
+Usueful for having coherent float to integer conversion in a unique place:
+Some Notes:
+    - bbox is the real occupation of the box in the space;
+    - siz is the number of cells for each side
 
-    OBJTYPE:      Type of the indexed objects.
-    SCALARTYPE:   Scalars type for structure's internal data (may differ from
-                  object's scalar type).
+OBJTYPE:      Type of the indexed objects.
+SCALARTYPE:   Scalars type for structure's internal data (may differ from
+                object's scalar type).
 
-    */
+*/
 
 template <class SCALARTYPE>
 class BasicGrid //:public SpatialIndex<SCALARTYPE>
@@ -71,12 +71,12 @@ public:
      from the current values of siz and bbox
     */
     void ComputeDimAndVoxel()
-        {
-            this->dim  = this->bbox.max - this->bbox.min;
-            this->voxel[0] = this->dim[0]/this->siz[0];
-            this->voxel[1] = this->dim[1]/this->siz[1];
-            this->voxel[2] = this->dim[2]/this->siz[2];
-        }
+    {
+        this->dim  = this->bbox.max - this->bbox.min;
+        this->voxel[0] = this->dim[0]/this->siz[0];
+        this->voxel[1] = this->dim[1]/this->siz[1];
+        this->voxel[2] = this->dim[2]/this->siz[2];
+    }
     /* Given a 3D point, returns the coordinates of the cell where the point is
      * @param p is a 3D point
      * @return integer coordinates of the cell
@@ -185,78 +185,68 @@ void BestDim( const Box3<scalar_type> box, const scalar_type voxel_size, Point3i
     __int64 elem_num = (__int64)(box_size[0]/voxel_size +0.5) *( __int64)(box_size[1]/voxel_size +0.5) * (__int64)(box_size[2]/voxel_size +0.5);
     BestDim(elem_num,box_size,dim);
 }
-    /** Calcolo dimensioni griglia.
-    Calcola la dimensione della griglia in funzione
-    della ratio del bounding box e del numero di elementi
-    */
-    template<class scalar_type>
-    void BestDim( const __int64 elems, const Point3<scalar_type> & size, Point3i & dim )
-    {
-        const __int64 mincells   = 1;		// Numero minimo di celle
-        const double GFactor = 1;	// GridEntry = NumElem*GFactor
-        double diag = size.Norm();	// Diagonale del box
-        double eps  = diag*1e-4;		// Fattore di tolleranza
 
-        assert(elems>0);
-        assert(size[0]>=0.0);
-        assert(size[1]>=0.0);
-        assert(size[2]>=0.0);
+/** Calcolo dimensioni griglia.
+Calcola la dimensione della griglia in funzione
+della ratio del bounding box e del numero di elementi
+*/
+template<class scalar_type>
+void BestDim( const __int64 elems, const Point3<scalar_type> & size, Point3i & dim ) {
+    const __int64 mincells   = 1;	// Numero minimo di celle
+    const double GFactor = 1;	    // GridEntry = NumElem*GFactor
+    double diag = size.Norm();	    // Diagonale del box
+    double eps  = diag*1e-4;		// Fattore di tolleranza
 
+    assert(elems>0);
+    assert(size[0]>=0.0);
+    assert(size[1]>=0.0);
+    assert(size[2]>=0.0);
 
-        __int64 ncell = (__int64)(elems*GFactor);	// Calcolo numero di voxel
-        if(ncell<mincells)
-            ncell = mincells;
+    __int64 ncell = (__int64)(elems*GFactor);	// Calcolo numero di voxel
+    if(ncell<mincells)
+        ncell = mincells;
 
-        dim[0] = 1;
-        dim[1] = 1;
-        dim[2] = 1;
+    dim[0] = 1;
+    dim[1] = 1;
+    dim[2] = 1;
 
-        if(size[0]>eps)
-        {
-            if(size[1]>eps)
-            {
-                if(size[2]>eps)
-                {
-                    double k = pow((double)(ncell/(size[0]*size[1]*size[2])),double(1.0/3.f));
-                    dim[0] = int(size[0] * k);
-                    dim[1] = int(size[1] * k);
-                    dim[2] = int(size[2] * k);
-                }
-                else
-                {
-                    dim[0] = int(::sqrt(ncell*size[0]/size[1]));
-                    dim[1] = int(::sqrt(ncell*size[1]/size[0]));
-                }
+    if(size[0]>eps) {
+        if(size[1]>eps) {
+            if(size[2]>eps) {
+                /// 计算每份长度大致要放多少个cell
+                double k = pow((double)(ncell/(size[0]*size[1]*size[2])),double(1.0/3.f));
+                /// 从而计算每个维度每份长度要放多少块(size记录了每个维度上的长度)
+                dim[0] = int(size[0] * k); 
+                dim[1] = int(size[1] * k);
+                dim[2] = int(size[2] * k);
+            }
+            else {
+                dim[0] = int(::sqrt(ncell*size[0]/size[1]));
+                dim[1] = int(::sqrt(ncell*size[1]/size[0]));
+            }
+        } else {
+            if(size[2]>eps) {
+                dim[0] = int(::sqrt(ncell*size[0]/size[2]));
+                dim[2] = int(::sqrt(ncell*size[2]/size[0]));
             }
             else
-            {
-                if(size[2]>eps)
-                {
-                    dim[0] = int(::sqrt(ncell*size[0]/size[2]));
-                    dim[2] = int(::sqrt(ncell*size[2]/size[0]));
-                }
-                else
-                    dim[0] = int(ncell);
-            }
+                dim[0] = int(ncell);
         }
-        else
-        {
-            if(size[1]>eps)
-            {
-                if(size[2]>eps)
-                {
-                    dim[1] = int(::sqrt(ncell*size[1]/size[2]));
-                    dim[2] = int(::sqrt(ncell*size[2]/size[1]));
-                }
-                else
-                    dim[1] = int(ncell);
-            }
-            else if(size[2]>eps)
-                dim[2] = int(ncell);
+    } else {
+        if(size[1]>eps) {
+            if(size[2]>eps) {
+                dim[1] = int(::sqrt(ncell*size[1]/size[2]));
+                dim[2] = int(::sqrt(ncell*size[2]/size[1]));
+            } else
+                dim[1] = int(ncell);
         }
+        else if(size[2]>eps)
+            dim[2] = int(ncell);
+    }
+    /// 保证每个维度上至少放1块
     dim[0] = std::max(dim[0],1);
     dim[1] = std::max(dim[1],1);
     dim[2] = std::max(dim[2],1);
-    }
+}
 }
 #endif

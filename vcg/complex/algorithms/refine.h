@@ -316,113 +316,107 @@ Requirement: FF Adjacency and Manifoldness
 **********************************************************/
 /*********************************************************/
 template <class VertexPointer>
-class RefinedFaceData
-    {
-        public:
-        RefinedFaceData(){
-            ep[0]=0;ep[1]=0;ep[2]=0;
-            vp[0]=0;vp[1]=0;vp[2]=0;
-        }
-        bool ep[3];
-        VertexPointer vp[3];
-    };
+class RefinedFaceData {
+    public:
+    RefinedFaceData(){
+        ep[0]=0;ep[1]=0;ep[2]=0;
+        vp[0]=0;vp[1]=0;vp[2]=0;
+    }
+    bool ep[3];
+    VertexPointer vp[3];
+};
 
 template<class MESH_TYPE,class MIDPOINT, class EDGEPRED>
 bool RefineE(MESH_TYPE &m, MIDPOINT &mid, EDGEPRED &ep,bool RefineSelected=false, CallBackPos *cb = 0)
 {
-    // common typenames
-    typedef typename MESH_TYPE::VertexIterator VertexIterator;
-    typedef typename MESH_TYPE::FaceIterator FaceIterator;
-    typedef typename MESH_TYPE::VertexPointer VertexPointer;
-    typedef typename MESH_TYPE::FacePointer FacePointer;
-    typedef typename MESH_TYPE::FaceType FaceType;
-    typedef typename MESH_TYPE::FaceType::TexCoordType TexCoordType;
-    assert(tri::HasFFAdjacency(m));
-    tri::UpdateFlags<MESH_TYPE>::FaceBorderFromFF(m);
-    typedef face::Pos<FaceType>  PosType;
+  // common typenames
+  typedef typename MESH_TYPE::VertexIterator VertexIterator;
+  typedef typename MESH_TYPE::FaceIterator FaceIterator;
+  typedef typename MESH_TYPE::VertexPointer VertexPointer;
+  typedef typename MESH_TYPE::FacePointer FacePointer;
+  typedef typename MESH_TYPE::FaceType FaceType;
+  typedef typename MESH_TYPE::FaceType::TexCoordType TexCoordType;
+  assert(tri::HasFFAdjacency(m));
+  tri::UpdateFlags<MESH_TYPE>::FaceBorderFromFF(m);
+  typedef face::Pos<FaceType>  PosType;
 
-    int j,NewVertNum=0,NewFaceNum=0;
+  int j,NewVertNum=0,NewFaceNum=0;
 
-    typedef RefinedFaceData<VertexPointer> RFD;
-    typedef typename MESH_TYPE :: template PerFaceAttributeHandle<RFD> HandleType;
-    HandleType RD  = tri::Allocator<MESH_TYPE>:: template AddPerFaceAttribute<RFD> (m,std::string("RefineData"));
+  /// 这里定义了一个额外的face属性RefinedFaceData
+  typedef RefinedFaceData<VertexPointer> RFD;
+  /// 通过PerFaceAttributeHandle将这个属性关联
+  typedef typename MESH_TYPE :: template PerFaceAttributeHandle<RFD> HandleType;
+  /// 这里将属性添加到了mesh中，返回了属性句柄，可以通过这个句柄访问对应的面的属性
+  HandleType RD  = tri::Allocator<MESH_TYPE>:: template AddPerFaceAttribute<RFD> (m,std::string("RefineData"));
 
-    // Callback stuff
-    int step=0;
-    int PercStep=std::max(1,m.fn/33);
+  // Callback stuff
+  int step=0;
+  int PercStep=std::max(1,m.fn/33);
 
-    // First Loop: We analyze the mesh to compute the number of the new faces and new vertices
-    FaceIterator fi;
-  for(fi=m.face.begin(),j=0;fi!=m.face.end();++fi) if(!(*fi).IsD())
-    {
-        if(cb && (++step%PercStep)==0) (*cb)(step/PercStep,"Refining...");
-        // skip unselected faces if necessary
-        if(RefineSelected && !(*fi).IsS()) continue;
+  // First Loop: We analyze the mesh to compute the number of the new faces and new vertices
+  FaceIterator fi;
+  for(fi=m.face.begin(),j=0;fi!=m.face.end();++fi) if(!(*fi).IsD()) {
+    if(cb && (++step%PercStep)==0) (*cb)(step/PercStep,"Refining...");
+    // skip unselected faces if necessary
+    if(RefineSelected && !(*fi).IsS()) continue;
 
-        for(j=0;j<3;j++)
-            {
-                if(RD[fi].ep[j]) continue;
+    for(j=0;j<3;j++) {
+      if(RD[fi].ep[j]) continue;
 
-                PosType edgeCur(&*fi,j);
-                if(RefineSelected && ! edgeCur.FFlip()->IsS()) continue;
-                if(!ep(edgeCur)) continue;
-
-                RD[edgeCur.F()].ep[edgeCur.E()]=true;
-                ++NewFaceNum;
-                ++NewVertNum;
-                assert(edgeCur.IsManifold());
-                if(!edgeCur.IsBorder())
-                {
-                    edgeCur.FlipF();
-                    edgeCur.F()->SetV();
-                    RD[edgeCur.F()].ep[edgeCur.E()]=true;
-                    ++NewFaceNum;
-                }
-            }
+      PosType edgeCur(&*fi,j);
+      if(RefineSelected && ! edgeCur.FFlip()->IsS()) continue;
+      if(!ep(edgeCur)) continue;
+      /// 选择那些长度过大的边，设置为需要refine的边，记录这个面
+      RD[edgeCur.F()].ep[edgeCur.E()]=true;
+      ++NewFaceNum; /// 记录一下需要增加的面的数量
+      ++NewVertNum; /// 记录一下需要增加的点的数量
+      assert(edgeCur.IsManifold());
+      if(!edgeCur.IsBorder()) {
+          /// 如果这个边不是边缘，还需要设置这天边对面的边
+          edgeCur.FlipF();
+          edgeCur.F()->SetV();
+          RD[edgeCur.F()].ep[edgeCur.E()]=true;
+          ++NewFaceNum;
+      }
+    }
 
   } // end face loop
 
-    if(NewVertNum ==0 )
-        {
-            tri::Allocator<MESH_TYPE> :: template DeletePerFaceAttribute<RefinedFaceData<VertexPointer> >  (m,RD);
-            return false;
+  if(NewVertNum ==0 ) {
+    tri::Allocator<MESH_TYPE> :: template DeletePerFaceAttribute<RefinedFaceData<VertexPointer> >  (m,RD);
+    return false;
+  }
+  VertexIterator lastv = tri::Allocator<MESH_TYPE>::AddVertices(m,NewVertNum);
+
+  // Secondo loop: We initialize a edge->vertex map
+  for(fi=m.face.begin();fi!=m.face.end();++fi) if(!(*fi).IsD()) {
+    if(cb && (++step%PercStep)==0)(*cb)(step/PercStep,"Refining...");
+    for(j=0;j<3;j++) {
+      // skip unselected faces if necessary
+      if(RefineSelected && !(*fi).IsS()) continue;
+      for(j=0;j<3;j++) {
+        PosType edgeCur(&*fi,j);
+        if(RefineSelected && ! edgeCur.FFlip()->IsS()) continue;
+        
+        if(RD[edgeCur.F()].ep[edgeCur.E()] && RD[edgeCur.F()].vp[edgeCur.E()] ==0) {
+          /// 这个表示这条边需要refine，但是还没有连上点
+          RD[edgeCur.F()].vp[edgeCur.E()] = &*lastv; /// 把当前的最后一个点给他
+          mid(*lastv,edgeCur); /// 将坐标设置为边的中点
+          if(!edgeCur.IsBorder()) {  /// 如果它不是边界，还需要把这个中点设置到对面那个面记录的边的附属属性上
+            edgeCur.FlipF();
+            assert(RD[edgeCur.F()].ep[edgeCur.E()]);
+            RD[edgeCur.F()].vp[edgeCur.E()] = &*lastv;
+          }
+          ++lastv;
         }
-    VertexIterator lastv = tri::Allocator<MESH_TYPE>::AddVertices(m,NewVertNum);
-
-    // Secondo loop: We initialize a edge->vertex map
-
-    for(fi=m.face.begin();fi!=m.face.end();++fi) if(!(*fi).IsD())
-  {
-       if(cb && (++step%PercStep)==0)(*cb)(step/PercStep,"Refining...");
-     for(j=0;j<3;j++)
-         {
-                // skip unselected faces if necessary
-                if(RefineSelected && !(*fi).IsS()) continue;
-                for(j=0;j<3;j++)
-                {
-                    PosType edgeCur(&*fi,j);
-                    if(RefineSelected && ! edgeCur.FFlip()->IsS()) continue;
-
-                    if( RD[edgeCur.F()].ep[edgeCur.E()] &&  RD[edgeCur.F()].vp[edgeCur.E()] ==0 )
-                    {
-                        RD[edgeCur.F()].vp[edgeCur.E()] = &*lastv;
-                        mid(*lastv,edgeCur);
-                        if(!edgeCur.IsBorder())
-                        {
-                            edgeCur.FlipF();
-                            assert(RD[edgeCur.F()].ep[edgeCur.E()]);
-                            RD[edgeCur.F()].vp[edgeCur.E()] = &*lastv;
-                        }
-                        ++lastv;
-                    }
-                }
-         }
+      }
+    }
   }
 
-    assert(lastv==m.vert.end()); // critical assert: we MUST have used all the vertex that we forecasted we need
+  assert(lastv==m.vert.end()); // critical assert: we MUST have used all the vertex that we forecasted we need
 
-    FaceIterator lastf = tri::Allocator<MESH_TYPE>::AddFaces(m,NewFaceNum);
-    FaceIterator oldendf = lastf;
+  FaceIterator lastf = tri::Allocator<MESH_TYPE>::AddFaces(m,NewFaceNum);
+  FaceIterator oldendf = lastf;
 
 /*
  *               v0
@@ -438,94 +432,94 @@ bool RefineE(MESH_TYPE &m, MIDPOINT &mid, EDGEPRED &ep,bool RefineSelected=false
  *v1            mp12                v2
  *
 */
+  /// 这里最多会将一个三角形分成4个
+  VertexPointer vv[6];	// The six vertices that arise in the single triangle splitting
+  //     0..2 Original triangle vertices
+  //     3..5 mp01, mp12, mp20 midpoints of the three edges
+  FacePointer nf[4];   // The (up to) four faces that are created.
+  /// 对于每个面，最多增加3个纹理的新值（每条边有一个）
+  TexCoordType wtt[6];  // per ogni faccia sono al piu' tre i nuovi valori
+  // di texture per wedge (uno per ogni edge)
 
-    VertexPointer vv[6];	// The six vertices that arise in the single triangle splitting
-    //     0..2 Original triangle vertices
-    //     3..5 mp01, mp12, mp20 midpoints of the three edges
-    FacePointer nf[4];   // The (up to) four faces that are created.
+  int fca=0,fcn =0;
+  for(fi=m.face.begin();fi!=oldendf;++fi) if(!(*fi).IsD()) {
+    if(cb && (++step%PercStep)==0)(*cb)(step/PercStep,"Refining...");
+    fcn++;
+    vv[0]=(*fi).V(0);
+    vv[1]=(*fi).V(1);
+    vv[2]=(*fi).V(2);
+    vv[3] = RD[fi].vp[0];
+    vv[4] = RD[fi].vp[1];
+    vv[5] = RD[fi].vp[2];
 
-    TexCoordType wtt[6];  // per ogni faccia sono al piu' tre i nuovi valori
-    // di texture per wedge (uno per ogni edge)
+    int ind=((&*vv[3])?1:0)+((&*vv[4])?2:0)+((&*vv[5])?4:0);
 
-    int fca=0,fcn =0;
-    for(fi=m.face.begin();fi!=oldendf;++fi) if(!(*fi).IsD())
-    {
-      if(cb && (++step%PercStep)==0)(*cb)(step/PercStep,"Refining...");
-      fcn++;
-      vv[0]=(*fi).V(0);
-      vv[1]=(*fi).V(1);
-      vv[2]=(*fi).V(2);
-      vv[3] = RD[fi].vp[0];
-      vv[4] = RD[fi].vp[1];
-      vv[5] = RD[fi].vp[2];
-
-      int ind=((&*vv[3])?1:0)+((&*vv[4])?2:0)+((&*vv[5])?4:0);
-
-      nf[0]=&*fi;
-      int i;
-      for(i=1;i<SplitTab[ind].TriNum;++i){
-        nf[i]=&*lastf; ++lastf; fca++;
-        if(RefineSelected || (*fi).IsS()) (*nf[i]).SetS();
-        nf[i]->ImportData(*fi);
+    nf[0]=&*fi;
+    int i;
+    for(i=1;i<SplitTab[ind].TriNum;++i){
+      nf[i]=&*lastf; ++lastf; fca++;
+      if(RefineSelected || (*fi).IsS()) (*nf[i]).SetS();
+      nf[i]->ImportData(*fi);
 //		if(tri::HasPerFaceColor(m))
 //  		nf[i]->C()=(*fi).cC();
-      }
+    }
 
 
-      if(tri::HasPerWedgeTexCoord(m))
-        for(i=0;i<3;++i)	{
-          wtt[i]=(*fi).WT(i);
-          wtt[3+i]=mid.WedgeInterp((*fi).WT(i),(*fi).WT((i+1)%3));
-        }
-
-      int orgflag=	(*fi).Flags();
-      for(i=0;i<SplitTab[ind].TriNum;++i)
-        for(j=0;j<3;++j){
-          (*nf[i]).V(j)=&*vv[SplitTab[ind].TV[i][j]];
-
-          if(tri::HasPerWedgeTexCoord(m)) //analogo ai vertici...
-            (*nf[i]).WT(j)=wtt[SplitTab[ind].TV[i][j]];
-
-          assert((*nf[i]).V(j)!=0);
-          if(SplitTab[ind].TE[i][j]!=3){
-            if(orgflag & (MESH_TYPE::FaceType::BORDER0<<(SplitTab[ind].TE[i][j])))
-              (*nf[i]).SetB(j);
-            else
-              (*nf[i]).ClearB(j);
-          }
-          else (*nf[i]).ClearB(j);
-        }
-
-      if(SplitTab[ind].TriNum==3 &&
-         SquaredDistance(vv[SplitTab[ind].swap[0][0]]->P(),vv[SplitTab[ind].swap[0][1]]->P()) <
-         SquaredDistance(vv[SplitTab[ind].swap[1][0]]->P(),vv[SplitTab[ind].swap[1][1]]->P()) )
-      { // swap the last two triangles
-        (*nf[2]).V(1)=(*nf[1]).V(0);
-        (*nf[1]).V(1)=(*nf[2]).V(0);
-        if(tri::HasPerWedgeTexCoord(m)){ //swap also textures coordinates
-          (*nf[2]).WT(1)=(*nf[1]).WT(0);
-          (*nf[1]).WT(1)=(*nf[2]).WT(0);
-        }
-
-        if((*nf[1]).IsB(0)) (*nf[2]).SetB(1); else (*nf[2]).ClearB(1);
-        if((*nf[2]).IsB(0)) (*nf[1]).SetB(1); else (*nf[1]).ClearB(1);
-        (*nf[1]).ClearB(0);
-        (*nf[2]).ClearB(0);
+    if(tri::HasPerWedgeTexCoord(m)) {
+      for(i=0;i<3;++i)	{
+        wtt[i]=(*fi).WT(i);
+        wtt[3+i]=mid.WedgeInterp((*fi).WT(i),(*fi).WT((i+1)%3));
       }
     }
 
-    assert(lastf==m.face.end());	 // critical assert: we MUST have used all the faces that we forecasted we need and that we previously allocated.
-    assert(!m.vert.empty());
-    for(fi=m.face.begin();fi!=m.face.end();++fi) if(!(*fi).IsD()){
-      assert((*fi).V(0)>=&*m.vert.begin() && (*fi).V(0)<=&m.vert.back() );
-      assert((*fi).V(1)>=&*m.vert.begin() && (*fi).V(1)<=&m.vert.back() );
-      assert((*fi).V(2)>=&*m.vert.begin() && (*fi).V(2)<=&m.vert.back() );
+    int orgflag=	(*fi).Flags();
+    for(i=0;i<SplitTab[ind].TriNum;++i)
+      for(j=0;j<3;++j){
+        (*nf[i]).V(j)=&*vv[SplitTab[ind].TV[i][j]];
+
+        if(tri::HasPerWedgeTexCoord(m)) //analogo ai vertici...
+          (*nf[i]).WT(j)=wtt[SplitTab[ind].TV[i][j]];
+
+        assert((*nf[i]).V(j)!=0);
+        if(SplitTab[ind].TE[i][j]!=3){
+          if(orgflag & (MESH_TYPE::FaceType::BORDER0<<(SplitTab[ind].TE[i][j])))
+            (*nf[i]).SetB(j);
+          else
+            (*nf[i]).ClearB(j);
+        }
+        else (*nf[i]).ClearB(j);
+      }
+
+    if(SplitTab[ind].TriNum==3 &&
+        SquaredDistance(vv[SplitTab[ind].swap[0][0]]->P(),vv[SplitTab[ind].swap[0][1]]->P()) <
+        SquaredDistance(vv[SplitTab[ind].swap[1][0]]->P(),vv[SplitTab[ind].swap[1][1]]->P()) )
+    { // swap the last two triangles
+      (*nf[2]).V(1)=(*nf[1]).V(0);
+      (*nf[1]).V(1)=(*nf[2]).V(0);
+      if(tri::HasPerWedgeTexCoord(m)){ //swap also textures coordinates
+        (*nf[2]).WT(1)=(*nf[1]).WT(0);
+        (*nf[1]).WT(1)=(*nf[2]).WT(0);
+      }
+
+      if((*nf[1]).IsB(0)) (*nf[2]).SetB(1); else (*nf[2]).ClearB(1);
+      if((*nf[2]).IsB(0)) (*nf[1]).SetB(1); else (*nf[1]).ClearB(1);
+      (*nf[1]).ClearB(0);
+      (*nf[2]).ClearB(0);
     }
-    tri::UpdateTopology<MESH_TYPE>::FaceFace(m);
+  }
 
-    tri::Allocator<MESH_TYPE> :: template DeletePerFaceAttribute<RefinedFaceData<VertexPointer> >  (m,RD);
+  assert(lastf==m.face.end());	 // critical assert: we MUST have used all the faces that we forecasted we need and that we previously allocated.
+  assert(!m.vert.empty());
+  for(fi=m.face.begin();fi!=m.face.end();++fi) if(!(*fi).IsD()){
+    assert((*fi).V(0)>=&*m.vert.begin() && (*fi).V(0)<=&m.vert.back() );
+    assert((*fi).V(1)>=&*m.vert.begin() && (*fi).V(1)<=&m.vert.back() );
+    assert((*fi).V(2)>=&*m.vert.begin() && (*fi).V(2)<=&m.vert.back() );
+  }
+  tri::UpdateTopology<MESH_TYPE>::FaceFace(m);
 
-    return true;
+  tri::Allocator<MESH_TYPE> :: template DeletePerFaceAttribute<RefinedFaceData<VertexPointer> >  (m,RD);
+
+  return true;
 }
 
 /*************************************************************************/

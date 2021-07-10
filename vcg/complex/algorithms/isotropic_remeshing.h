@@ -242,6 +242,7 @@ public:
 			tri::UpdateNormal<MeshType>::PerFaceNormalized(toProject);
 			params.m = &toRemesh;
 			params.mProject = &toProject;
+			/// 这里是通过mesh生成三维网格
 			params.grid.Set(toProject.face.begin(), toProject.face.end());
 		}
 
@@ -252,9 +253,9 @@ public:
 		tri::UpdateFlags<MeshType>::VertexBorderFromFaceAdj(toRemesh);
 		tri::UpdateTopology<MeshType>::VertexFace(toRemesh);
 
-		//		computeQuality(toRemesh);
+		//		computeQuality(toRemesh); /// 原则上这里需要计算，否则后面点的Q可能会不被初始化，或者这里是想让用户计算点的Q
 		//		tri::UpdateQuality<MeshType>::VertexSaturate(toRemesh);
-
+		/// 这里把使得三角形性质比较好的，或者是边界的edge标签S设置为true
 		tagCreaseEdges(toRemesh, params);
 
 		for(int i=0; i < params.iter; ++i)
@@ -313,6 +314,7 @@ private:
 	static inline void computeVQualityDistrMinMax(MeshType &m, ScalarType &minQ, ScalarType &maxQ)
 	{
 		Distribution<ScalarType> distr;
+		/// 把每个点的质量Q加入到分布中
 		tri::Stat<MeshType>::ComputePerVertexQualityDistribution(m,distr);
 
 		maxQ = distr.Percentile(0.9f);
@@ -326,24 +328,25 @@ private:
 		tri::RequirePerVertexQuality(m);
 		tri::UpdateFlags<MeshType>::VertexClearV(m);
 
-		for(auto vi=m.vert.begin(); vi!=m.vert.end(); ++vi)
-			if(!(*vi).IsD())
-			{
+		for(auto vi=m.vert.begin(); vi!=m.vert.end(); ++vi) {
+			if(!(*vi).IsD()) {
 				vector<FaceType*> ff;
+				/// 得到vi的one-ring
 				face::VFExtendedStarVF(&*vi, 0, ff);
-
+				
 				ScalarType tot = 0.f;
 				auto it = ff.begin();
 				Point3<ScalarType> fNormal = NormalizedTriangleNormal(**it);
 				++it;
-				while(it != ff.end())
-				{
-					tot+= 1-math::Abs(fastAngle(fNormal, NormalizedTriangleNormal(**it)));
+				while(it != ff.end()) {
+					tot += 1-math::Abs(fastAngle(fNormal, NormalizedTriangleNormal(**it))); // 计算1-cos(二面角) 大致等于 x^2/2
 					++it;
 				}
+
 				vi->Q() = tot / (ScalarType)(std::max(1, ((int)ff.size()-1)));
 				vi->SetV();
 			}
+		}
 	}
 
 	/*
@@ -397,30 +400,33 @@ private:
 
 		vcg::tri::UpdateFlags<MeshType>::VertexClearV(m);
 		std::queue<PosType> creaseQueue;
+		/// 这里会对每个face生成3个半边，比如f(0, 1, 2)
+		/// 会生成 pos(f, 2, 0) pos(f, 0, 1) pos(f, 1, 2)
+		/// 执行lambda的操作
 		ForEachFacePos(m, [&](PosType &p){
 
 			if (p.IsBorder())
-				p.F()->SetFaceEdgeS(p.E());
+				p.F()->SetFaceEdgeS(p.E());  /// 设置真正的边
 
 			//			if((p.FFlip() > p.F()))
 			{
 				FaceType *ff    = p.F();
 				FaceType *ffAdj = p.FFlip();
-
+				///  内切圆直径 / 外接圆半径 用于判断三角形有多扁，越扁值越小，等边三角形=1
 				double quality    = vcg::QualityRadii(ff->cP(0), ff->cP(1), ff->cP(2));
 				double qualityAdj = vcg::QualityRadii(ffAdj->cP(0), ffAdj->cP(1), ffAdj->cP(2));
 
 				bool qualityCheck = quality > 0.00000001 && qualityAdj > 0.00000001;
 //				bool areaCheck    = vcg::DoubleArea(*ff) > 0.000001 && vcg::DoubleArea(*ffAdj) > 0.000001;
-
+				// testCreaseEdge计算了相邻边的内积，如果内积小于creaseAngleCosThr且大于-0.98返回会true
 				if (!params.userSelectedCreases && (testCreaseEdge(p, params.creaseAngleCosThr) /*&& areaCheck*//* && qualityCheck*/) || p.IsBorder())
 				{
 					PosType pp = p;
 					do {
-						pp.F()->SetFaceEdgeS(pp.E());
+						pp.F()->SetFaceEdgeS(pp.E()); /// 这里实际上是把满足要求的edge都设置为true(性质比较好的，且是边界的)
 						pp.NextF();
 					} while (pp != p);
-
+					/// 所有满足要求的半边都入队
 					creaseQueue.push(p);
 				}
 			}
@@ -662,6 +668,7 @@ private:
 		ScalarType length, lengthThr, minQ, maxQ;
 		bool operator()(PosType &ep)
 		{
+			 /// VFlip返回记录点通过半边连接的另一个点
 			ScalarType mult = math::ClampedLerp((ScalarType)0.5,(ScalarType)1.5, (((math::Abs(ep.V()->Q())+math::Abs(ep.VFlip()->Q()))/(ScalarType)2.0)/(maxQ-minQ)));
 			ScalarType dist = Distance(ep.V()->P(), ep.VFlip()->P());
 			if(dist > std::max(mult*length,lengthThr*2))
@@ -700,12 +707,23 @@ private:
 
 		ScalarType minQ,maxQ;
 		if(params.adapt){
+			/// 得到点的质量的分布,min和max分别是10%和90%分位点
 			computeVQualityDistrMinMax(m, minQ, maxQ);
+			/// 这里是一个方法，会在RefineE中调用
 			EdgeSplitAdaptPred ep;
 			ep.minQ      = minQ;
 			ep.maxQ      = maxQ;
 			ep.length    = params.maxLength;
 			ep.lengthThr = params.lengthThr;
+			// ScalarType mult = math::ClampedLerp((ScalarType)0.5,(ScalarType)1.5, (((math::Abs(ep.V()->Q())+math::Abs(ep.VFlip()->Q()))/(ScalarType)2.0)/(maxQ-minQ)));
+			// ScalarType dist = Distance(ep.V()->P(), ep.VFlip()->P());
+			// if(dist > std::max(mult*length,lengthThr*2))
+			// {
+			// 	++count;
+			// 	return true;
+			// }
+			// else
+			// 	return false;			
 			tri::RefineE(m,midFunctor,ep);
 			params.stat.splitNum+=ep.count;
 		}
