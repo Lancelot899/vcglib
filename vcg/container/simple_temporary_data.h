@@ -89,8 +89,8 @@ class SimpleTempData:public SimpleTempDataBase{
     typedef SimpleTempData<STL_CONT,ATTR_TYPE> SimpTempDataType;
     typedef ATTR_TYPE AttrType;
 
-    STL_CONT& c;
-    VectorNBW<ATTR_TYPE> data;
+    STL_CONT& c; /// 存储了类型
+    VectorNBW<ATTR_TYPE> data; /// 这里存储的类型的属性容器
     int padding;
 
     SimpleTempData(STL_CONT  &_c):c(_c),padding(0){data.reserve(c.capacity());data.resize(c.size());};
@@ -106,7 +106,7 @@ class SimpleTempData:public SimpleTempDataBase{
         std::fill(data.begin(),data.end(),val);
     }
     // access to data
-    ATTR_TYPE & operator[](const typename STL_CONT::value_type & v){return data[&v-&*c.begin()];}
+    ATTR_TYPE & operator[](const typename STL_CONT::value_type & v){return data[&v-&*c.begin()];}  /// 通过类型来访问对应属性
     ATTR_TYPE & operator[](const typename STL_CONT::value_type * v){return data[v-&*c.begin()];}
     ATTR_TYPE & operator[](const typename STL_CONT::iterator & cont){return data[&(*cont)-&*c.begin()];}
     ATTR_TYPE & operator[](size_t i){return data[i];}

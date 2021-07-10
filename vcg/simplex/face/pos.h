@@ -249,6 +249,7 @@ namespace vcg {
             }
 
             /// return the vertex that it should have if we make FlipV;
+            /// 返回记录点通过半边连接的另一个点
             VertexType* VFlip() const
             {
                 assert(f->cV(f->Prev(z)) != v && (f->cV(f->Next(z)) == v || f->cV(z) == v));

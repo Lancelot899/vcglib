@@ -668,6 +668,7 @@ private:
 		ScalarType length, lengthThr, minQ, maxQ;
 		bool operator()(PosType &ep)
 		{
+			 /// VFlip返回记录点通过半边连接的另一个点
 			ScalarType mult = math::ClampedLerp((ScalarType)0.5,(ScalarType)1.5, (((math::Abs(ep.V()->Q())+math::Abs(ep.VFlip()->Q()))/(ScalarType)2.0)/(maxQ-minQ)));
 			ScalarType dist = Distance(ep.V()->P(), ep.VFlip()->P());
 			if(dist > std::max(mult*length,lengthThr*2))
@@ -706,13 +707,23 @@ private:
 
 		ScalarType minQ,maxQ;
 		if(params.adapt){
-			/// 计算点的质量,min和max分别是10%和90%分位点
+			/// 得到点的质量的分布,min和max分别是10%和90%分位点
 			computeVQualityDistrMinMax(m, minQ, maxQ);
+			/// 这里是一个方法，会在RefineE中调用
 			EdgeSplitAdaptPred ep;
 			ep.minQ      = minQ;
 			ep.maxQ      = maxQ;
 			ep.length    = params.maxLength;
 			ep.lengthThr = params.lengthThr;
+			// ScalarType mult = math::ClampedLerp((ScalarType)0.5,(ScalarType)1.5, (((math::Abs(ep.V()->Q())+math::Abs(ep.VFlip()->Q()))/(ScalarType)2.0)/(maxQ-minQ)));
+			// ScalarType dist = Distance(ep.V()->P(), ep.VFlip()->P());
+			// if(dist > std::max(mult*length,lengthThr*2))
+			// {
+			// 	++count;
+			// 	return true;
+			// }
+			// else
+			// 	return false;			
 			tri::RefineE(m,midFunctor,ep);
 			params.stat.splitNum+=ep.count;
 		}
